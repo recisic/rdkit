@@ -37,13 +37,13 @@ using boost_adaptbx::python::streambuf;
 
 namespace RDKit{
   std::string molToSVG(const ROMol &mol,python::object pyHighlightAtoms,bool kekulize,
-                       unsigned int lineWidthMult,unsigned int fontSize){
+                       unsigned int lineWidthMult,unsigned int fontSize,bool includeAtomCircles){
 
     std::vector<int> *highlightAtoms=pythonObjectToVect(pyHighlightAtoms,static_cast<int>(mol.getNumAtoms()));
 
-    std::vector<int> drawing=RDKit::Drawing::MolToDrawing(mol,highlightAtoms,kekulize);
+    std::vector<int> drawing=RDKit::Drawing::MolToDrawing(mol,highlightAtoms,kekulize,includeAtomCircles);
     delete highlightAtoms;
-    return RDKit::Drawing::DrawingToSVG(drawing,lineWidthMult,fontSize);
+    return RDKit::Drawing::DrawingToSVG(drawing,lineWidthMult,fontSize,includeAtomCircles);
   }
   ROMol *fragmentOnBondsHelper(const ROMol &mol,python::object pyBondIndices,
                                bool addDummies,
@@ -1560,7 +1560,8 @@ namespace RDKit{
                   (python::arg("mol"),python::arg("highlightAtoms")=python::object(),
                    python::arg("kekulize")=true,
                    python::arg("lineWidthMult")=2,
-                   python::arg("fontSize")=50),
+                   python::arg("fontSize")=50,
+                   python::arg("includeAtomCircles")=false),
                   docString.c_str());
 
 

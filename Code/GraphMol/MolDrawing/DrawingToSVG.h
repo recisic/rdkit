@@ -116,7 +116,7 @@ namespace RDKit {
         sstr<<" x='-"<<width/2<<"' y='-"<<height/2<<"'";
         sstr<<"> </svg:rect>\n";
         sstr<<"<svg:text";
-        sstr<<" style='font-size:"<<fontSz<<"px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill-opacity:1;stroke:none;font-family:Sans;text-anchor:middle"<<";fill:"<<getColor(atNum)<<"'";
+        sstr<<" style='font-size:"<<fontSz<<"px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill-opacity:1;stroke:none;font-family:sans-serif;text-anchor:middle"<<";fill:"<<getColor(atNum)<<"'";
         sstr<<" y='"<<.75*fontSz/2<<"'>";
         sstr<<"<svg:tspan>";
         sstr<<label<<"</svg:tspan>";

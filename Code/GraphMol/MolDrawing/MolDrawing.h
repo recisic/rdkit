@@ -17,6 +17,7 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <GraphMol/RDKitBase.h>
+#include <GraphMol/Depictor/RDDepictor.h>
 #include <Geometry/point.h>
 
 /***********

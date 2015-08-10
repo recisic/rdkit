@@ -19,10 +19,10 @@ namespace RDCatalog {
     virtual ~CatalogParams() = 0;
 
     //! returns our type string
-    std::string getTypeStr() const { return d_typeStr; };
+    std::string getTypeStr() const { return d_typeStr; }
 
     //! sets our type string
-    void setTypeStr(const std::string &typeStr) { d_typeStr=typeStr; };
+    void setTypeStr(const std::string &typeStr) { d_typeStr=typeStr; }
 
     //! serializes (pickles) to a stream
     virtual void toStream(std::ostream &) const = 0;

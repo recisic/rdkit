@@ -136,7 +136,7 @@ namespace RDKit{
     //val = EndianSwapBytes<HOST_ENDIAN_ORDER,LITTLE_ENDIAN_ORDER>(val);
     
     for (bix = 0; bix < nbytes; bix++) {
-      tc = (char) (val & 255);
+      tc = static_cast<char>(val & 255);
       ss.write(&tc, 1);
       val >>= 8;
     }
@@ -145,35 +145,35 @@ namespace RDKit{
   //! Reads an integer from a stream in packed format and returns the result.
   inline boost::uint32_t readPackedIntFromStream(std::stringstream &ss) {
     boost::uint32_t val, num;
-    int shift, offset;
+    unsigned int shift, offset;
     char tmp;
     ss.read(&tmp, sizeof(tmp));
-    val = UCHAR(tmp);
+    val = static_cast<unsigned char>(tmp);
     offset = 0;
     if ((val&1) == 0) {
       shift = 1;
     }
     else if ((val&3) == 1) {
-      ss.read((char *)&tmp, sizeof(tmp));
-      val |= (UCHAR(tmp) << 8);
+      ss.read(static_cast<char *>(&tmp), sizeof(tmp));
+      val |= (static_cast<boost::uint32_t>(tmp) << 8);
       shift = 2;
       offset = (1<<7);
     }
     else if ((val&7) == 3) {
-      ss.read((char *)&tmp, sizeof(tmp));
-      val |= (UCHAR(tmp) << 8);
-      ss.read((char *)&tmp, sizeof(tmp));
-      val |= (UCHAR(tmp) << 16);
+      ss.read(static_cast<char *>(&tmp), sizeof(tmp));
+      val |= (static_cast<boost::uint32_t>(tmp) << 8);
+      ss.read(static_cast<char *>(&tmp), sizeof(tmp));
+      val |= (static_cast<boost::uint32_t>(tmp) << 16);
       shift = 3;
       offset = (1<<7) + (1<<14);
     }
     else {
-      ss.read((char *)&tmp, sizeof(tmp));
-      val |= (UCHAR(tmp) << 8);
-      ss.read((char *)&tmp, sizeof(tmp));
-      val |= (UCHAR(tmp) << 16);
-      ss.read((char *)&tmp, sizeof(tmp));
-      val |= (UCHAR(tmp) << 24);
+      ss.read(static_cast<char *>(&tmp), sizeof(tmp));
+      val |= (static_cast<boost::uint32_t>(tmp) << 8);
+      ss.read(static_cast<char *>(&tmp), sizeof(tmp));
+      val |= (static_cast<boost::uint32_t>(tmp) << 16);
+      ss.read(static_cast<char *>(&tmp), sizeof(tmp));
+      val |= (static_cast<boost::uint32_t>(tmp) << 24);
       shift = 3;
       offset = (1<<7) + (1<<14) + (1<<21);
     }
@@ -186,11 +186,11 @@ namespace RDKit{
   //!  The argument is advanced
   inline boost::uint32_t pullPackedIntFromString(const char *&text) {
     boost::uint32_t val, num;
-    int shift, offset;
+    unsigned int shift, offset;
     char tmp;
     tmp = *text;
     text++;
-    val = UCHAR(tmp);
+    val = static_cast<boost::uint32_t>(tmp);
     offset = 0;
     if ((val&1) == 0) {
       shift = 1;
@@ -198,30 +198,30 @@ namespace RDKit{
     else if ((val&3) == 1) {
       tmp = *text;
       text++;
-      val |= (UCHAR(tmp) << 8);
+      val |= (static_cast<boost::uint32_t>(tmp) << 8);
       shift = 2;
       offset = (1<<7);
     }
     else if ((val&7) == 3) {
       tmp = *text;
       text++;
-      val |= (UCHAR(tmp) << 8);
+      val |= (static_cast<boost::uint32_t>(tmp) << 8);
       tmp = *text;
       text++;
-      val |= (UCHAR(tmp) << 16);
+      val |= (static_cast<boost::uint32_t>(tmp) << 16);
       shift = 3;
       offset = (1<<7) + (1<<14);
     }
     else {
       tmp = *text;
       text++;
-      val |= (UCHAR(tmp) << 8);
+      val |= (static_cast<boost::uint32_t>(tmp) << 8);
       tmp = *text;
       text++;
-      val |= (UCHAR(tmp) << 16);
+      val |= (static_cast<boost::uint32_t>(tmp) << 16);
       tmp = *text;
       text++;
-      val |= (UCHAR(tmp) << 24);
+      val |= (static_cast<boost::uint32_t>(tmp) << 24);
       shift = 3;
       offset = (1<<7) + (1<<14) + (1<<21);
     }
@@ -234,13 +234,13 @@ namespace RDKit{
   template <typename T>
     void streamWrite(std::ostream &ss,const T &val){
     T tval=EndianSwapBytes<HOST_ENDIAN_ORDER,LITTLE_ENDIAN_ORDER>(val);
-    ss.write((const char *)&tval,sizeof(T));
+    ss.write(static_cast<const char *>(&tval),sizeof(T));
   }
   //! does a binary read of an object from a stream
   template <typename T>
     void streamRead(std::istream &ss,T &loc){
     T tloc;
-    ss.read((char *)&tloc,sizeof(T));
+    ss.read(static_cast<char *>(&tloc),sizeof(T));
     loc = EndianSwapBytes<LITTLE_ENDIAN_ORDER,HOST_ENDIAN_ORDER>(tloc);
   }
  

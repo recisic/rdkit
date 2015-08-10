@@ -186,7 +186,7 @@ endif()
 
 if(CMAKE_COMPILER_IS_CLANG)
    ADD_DEFINITIONS("-Weverything")
-   ADD_DEFINITIONS("-Wno-exit-time-destructors -Wno-global-constructors")
+   ADD_DEFINITIONS("-Wno-exit-time-destructors -Wno-global-constructors -Wno-padded -Wno-weak-vtables")
 endif()
 
 

@@ -30,7 +30,7 @@ namespace RDCatalog {
   const int versionMajor=1;
   const int versionMinor=0;
   const int versionPatch=0;
-  const int endianId=0xDEADBEEF;
+  const int endianId=static_cast<int>(0xDEADBEEF);
   
   //-----------------------------------------------------------------------------
   //! abstract base class for a catalog object
@@ -41,7 +41,7 @@ namespace RDCatalog {
     typedef paramType paramType_t;
     
     //------------------------------------
-    Catalog() : d_fpLength(0), dp_cParams(0) {};
+    Catalog() : d_fpLength(0), dp_cParams(0) {}
 
     //------------------------------------
     virtual ~Catalog(){
@@ -158,7 +158,7 @@ namespace RDCatalog {
     typedef std::pair<DOWN_ENT_ITER, DOWN_ENT_ITER> DOWN_ENT_ITER_PAIR;
     
     //------------------------------------
-    HierarchCatalog<entryType, paramType, orderType>() {};
+    HierarchCatalog<entryType, paramType, orderType>() {}
     
     //------------------------------------
     //! Construct by making a copy of the input \c params object
@@ -289,7 +289,7 @@ namespace RDCatalog {
     void initFromString(const std::string &text){
       std::stringstream ss(std::ios_base::binary|std::ios_base::out|std::ios_base::in);
       // initialize the stream:
-      ss.write(text.c_str(),text.length());
+      ss.write(text.c_str(),static_cast<long>(text.length()));
       // now start reading out values:
       this->initFromStream(ss);
     }
@@ -389,7 +389,7 @@ namespace RDCatalog {
       for(unsigned int i=idx;i<this->getNumEntries();i++){
         const entryType *e=pMap[i];
         if(static_cast<unsigned int>(e->getBitId())==idx){
-          res=i;
+          res=static_cast<int>(i);
 	  break;
         }
       }

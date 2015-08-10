@@ -178,6 +178,11 @@ include_directories(${RDKit_CodeDir})
 # detect it.
 string(REGEX MATCH "clang" CMAKE_COMPILER_IS_CLANG "${CMAKE_C_COMPILER}")
 
+if(CMAKE_COMPILER_IS_CLANG)
+   ADD_DEFINITIONS("-Weverything")
+endif()
+
+
 if(RDK_TEST_MULTITHREADED)
   ADD_DEFINITIONS("-DRDK_TEST_MULTITHREADED -DBOOST_ALL_NO_LIB")
 endif()

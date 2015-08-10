@@ -4,6 +4,12 @@ if(RDK_BUILD_INCHI_SUPPORT)
   # search system InChI
   find_package(Inchi)
 
+  # the InChI code generates tons of warnings... turn them off
+  if(CMAKE_COMPILER_IS_CLANG)
+     ADD_DEFINITIONS("-w")
+  endif()
+
+
   # check whether we have custom InChI source
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/ichican2.c)
     message(STATUS  "Found InChI software locally")

@@ -4,6 +4,12 @@ set(AVALON_SRC_PATH ${AVALONTOOLS_DIR}/common)
 
 add_definitions(-DBUILD_AVALON_SUPPORT)
 
+# the Avalon code generates tons of warnings... turn them off
+if(CMAKE_COMPILER_IS_CLANG)
+   ADD_DEFINITIONS("-w")
+endif()
+
+
 set(avalon_clib_srcs ${AVALON_SRC_PATH}/layout.c 
 	${AVALON_SRC_PATH}/symboltable.c 
 	${AVALON_SRC_PATH}/patclean.c 

@@ -32,7 +32,7 @@ boost::logging::rdLogger *rdStatusLog=0;
 namespace boost {
   namespace logging {
 
-    void enable_logs(const char *arg) { enable_logs(std::string(arg));};
+    void enable_logs(const char *arg) { enable_logs(std::string(arg));}
     void enable_logs(const std::string &arg) {
       // Yes... this is extremely crude
       if(arg=="rdApp.debug"||arg=="rdApp.*"){
@@ -47,8 +47,8 @@ namespace boost {
       if(arg=="rdApp.error"||arg=="rdApp.*"){
         if(rdErrorLog) rdErrorLog->df_enabled=true;
       }
-    };
-    void disable_logs(const char *arg) {disable_logs(std::string(arg));};
+    }
+    void disable_logs(const char *arg) {disable_logs(std::string(arg));}
     void disable_logs(const std::string &arg) {
       // Yes... this is extremely crude
       if(arg=="rdApp.debug"||arg=="rdApp.*"){
@@ -63,7 +63,7 @@ namespace boost {
       if(arg=="rdApp.error"||arg=="rdApp.*"){
         if(rdErrorLog) rdErrorLog->df_enabled=false;
       }
-    };
+    }
   }
 }
 

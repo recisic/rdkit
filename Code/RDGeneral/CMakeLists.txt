@@ -1,7 +1,7 @@
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/versions.h.cmake
                ${CMAKE_CURRENT_SOURCE_DIR}/versions.h )
 if(CMAKE_COMPILER_IS_CLANG)
-  ADD_DEFINITIONS("-Wno-c++11-long-long")
+  ADD_DEFINITIONS("-Wno-c++11-long-long -Wno-weak-vtables" )
 endif()
 
 rdkit_library(RDGeneral

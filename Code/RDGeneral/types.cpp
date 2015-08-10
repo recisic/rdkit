@@ -101,7 +101,7 @@ double round(double num){
   double floorVal = floor(num);
   double ceilVal = ceil(num);
   return num-floorVal > ceilVal-num ? ceilVal : floorVal;
-};
+}
 
 
   void Union(const INT_VECT &r1, const INT_VECT &r2, INT_VECT &res) {

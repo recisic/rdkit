@@ -200,7 +200,7 @@ namespace RDKit {
   //! functor to compare two doubles with a tolerance
   struct ltDouble {
   public:
-    ltDouble() : _tol(1.0e-8) {};
+    ltDouble() : _tol(1.0e-8) {}
     bool operator() (double d1, double d2) const {
       if (fabs(d1 - d2) < _tol) {
 	return false;
@@ -219,7 +219,7 @@ namespace RDKit {
   //! functor for returning the larger of two values
   template <typename T>
   struct larger_of {
-    T operator()(T arg1,T arg2) { return arg1>arg2 ? arg1 : arg2; };
+    T operator()(T arg1,T arg2) { return arg1>arg2 ? arg1 : arg2; }
   };
 
 
@@ -230,7 +230,7 @@ namespace RDKit {
       //std::cout << s1 << " " << s2 << " " << strcmp(s1, s2) << "\n";
 
       return strcmp(s1, s2) < 0;
-    };
+    }
   };
   
   //! \brief calculate the union of two INT_VECTs and put the results in a

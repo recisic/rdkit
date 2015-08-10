@@ -17,8 +17,8 @@ namespace boost {
   namespace logging {
     class rdLogger{
     public:
-    rdLogger(std::ostream *dest,bool owner=false) : dp_dest(dest), df_owner(owner),
-        df_enabled(true) {}
+      rdLogger(std::ostream *dest,bool owner=false) : dp_dest(dest), df_owner(owner),
+                                                      df_enabled(true) {}
       std::ostream *dp_dest;
       bool df_owner,df_enabled;
       ~rdLogger(){

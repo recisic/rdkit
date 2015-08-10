@@ -40,6 +40,7 @@ namespace detail {
 
 #include <boost/any.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/cstdint.hpp>
 
 
 namespace RDKit {
@@ -121,11 +122,9 @@ namespace RDKit {
         extern const std::string ringMembership;
         extern const std::string smilesSymbol;
     } // end common_properties
-#ifndef WIN32
-  typedef long long int LONGINT;
-#else
-  typedef __int64 LONGINT;
-#endif
+
+typedef boost::int64_t LONGINT;
+
 #ifdef max
 #undef max // FUCK I hate this nonsense
 #endif  

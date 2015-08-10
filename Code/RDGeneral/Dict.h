@@ -12,8 +12,8 @@
   \brief Defines the Dict class
 
 */  
-#ifndef __RD_DICT_H__
-#define __RD_DICT_H__
+#ifndef RD_DICT_H_
+#define RD_DICT_H_
 
 #include <map>
 #include <string>
@@ -35,14 +35,14 @@ namespace RDKit{
     typedef std::map<std::string, boost::any> DataType;
     Dict(){
       _data.clear();
-    };
+    }
 
-    Dict(const Dict &other) : _data(other._data) {};
+    Dict(const Dict &other) : _data(other._data) {}
 
     Dict &operator=(const Dict &other) {
       _data = other._data;
       return *this;
-    };
+    }
 
     //----------------------------------------------------------
     //! \brief Returns whether or not the dictionary contains a particular
@@ -50,10 +50,10 @@ namespace RDKit{
     bool hasVal(const char *what) const{
       std::string key(what);
       return hasVal(key);
-    };
+    }
     bool hasVal(const std::string &what) const {
       return _data.find(what)!=_data.end();
-    };
+    }
 
     //----------------------------------------------------------
     //! Returns the set of keys in the dictionary
@@ -75,7 +75,7 @@ namespace RDKit{
        \param what  the key to lookup
        \param res   a reference used to return the result
     
-       <B>Notes:</b>
+       <b>Notes:</b>
         - If \c res is a \c std::string, every effort will be made
           to convert the specified element to a string using the
           \c boost::lexical_cast machinery.
@@ -85,7 +85,7 @@ namespace RDKit{
     template <typename T>
     void getVal(const std::string &what,T &res) const {
       res = getVal<T>(what);
-    };
+    }
     //! \overload
     template <typename T>
     T getVal(const std::string &what) const {
@@ -102,18 +102,18 @@ namespace RDKit{
       std::string key(what);
       res = getVal<T>(key);
       return res; 
-    };
+    }
     //! \overload
     template <typename T>
     T getVal(const char *what) const {
       std::string key(what);
       return getVal<T>(key);
-    };
+    }
 
     //! \overload
     void getVal(const std::string &what, std::string &res) const;
     //! \overload
-    void getVal(const char *what, std::string &res) const { getVal(std::string(what),res); };
+    void getVal(const char *what, std::string &res) const { getVal(std::string(what),res); }
 
     //----------------------------------------------------------
     //! \brief Potentially gets the value associated with a particular key
@@ -122,7 +122,7 @@ namespace RDKit{
        \param what  the key to lookup
        \param res   a reference used to return the result
     
-       <B>Notes:</b>
+       <b>Notes:</b>
         - If \c res is a \c std::string, every effort will be made
           to convert the specified element to a string using the
           \c boost::lexical_cast machinery.
@@ -138,20 +138,20 @@ namespace RDKit{
       const boost::any &val = pos->second;
       res = fromany<T>(val);
       return true;
-    };
+    }
 
     template <typename T>
     bool getValIfPresent(const char *what,T &res) const {
       std::string key(what);
       return getValIfPresent<T>(key, res);
-    };
+    }
 
     //! \overload
     bool getValIfPresent(const std::string &what, std::string &res) const;
     //! \overload
     bool getValIfPresent(const char *what, std::string &res) const {
       return getValIfPresent(std::string(what),res);
-    };
+    }
     
     //----------------------------------------------------------
     //! \brief Sets the value associated with a key
@@ -169,13 +169,13 @@ namespace RDKit{
     template <typename T>
     void setVal(const std::string &what, T &val){
       _data[what] = toany(val);
-    };
+    }
     //! \overload
     template <typename T>
     void setVal(const char *what, T &val){
       std::string key = what;
       setVal(key,val);
-    };
+    }
     //! \overload
     void setVal(const std::string &what, const char *val){
       std::string h(val);
@@ -198,20 +198,20 @@ namespace RDKit{
     void clearVal(const std::string &what) {
       if(! this->hasVal(what) ) throw KeyErrorException(what);
       _data.erase(what);
-    };
+    }
 
     //! \overload
     void clearVal(const char *what) {
       std::string key=what;
       clearVal(key);
-    };
+    }
 
     //----------------------------------------------------------
     //! \brief Clears all keys (and values) from the dictionary.
     //!
     void reset(){
       _data.clear();
-    };
+    }
 
     //----------------------------------------------------------
     //! Converts a \c boost::any to type \c T

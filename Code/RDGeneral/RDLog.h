@@ -8,8 +8,8 @@
 //  of the RDKit source tree.
 //
 
-#ifndef _RDLOG_H_29JUNE2005_
-#define _RDLOG_H_29JUNE2005_
+#ifndef RDLOG_H_29JUNE2005_
+#define RDLOG_H_29JUNE2005_
 
 #if 1
 #include <iostream>
@@ -18,7 +18,7 @@ namespace boost {
     class rdLogger{
     public:
     rdLogger(std::ostream *dest,bool owner=false) : dp_dest(dest), df_owner(owner),
-        df_enabled(true) {};
+        df_enabled(true) {}
       std::ostream *dp_dest;
       bool df_owner,df_enabled;
       ~rdLogger(){

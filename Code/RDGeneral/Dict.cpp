@@ -69,7 +69,7 @@ namespace RDKit{
         throw;
       }
     }
-  };
+  }
 
     bool Dict::getValIfPresent(const std::string &what, std::string &res) const {
     //
@@ -109,7 +109,7 @@ namespace RDKit{
       }
     }
     return true;
-  };
+  }
 
   namespace {
     template <class T>
@@ -140,33 +140,33 @@ namespace RDKit{
   template <typename T>
   T Dict::fromany(const boost::any &arg) const {
     return _fromany<T>(arg);
-  };
+  }
   template <typename T>
   boost::any Dict::toany(T arg) const {
     return boost::any(arg);
-  };
+  }
 
 #define ANY_FORCE(T) template T Dict::fromany<T>(const boost::any& arg) const; \
                      template boost::any Dict::toany<T>(T arg) const;
   
-  ANY_FORCE(bool);
-  ANY_FORCE(boost::shared_array<double>);
-  ANY_FORCE(boost::shared_array<int>);
-  ANY_FORCE(double);
-  ANY_FORCE(int);
-  ANY_FORCE(std::list<int>);
-  ANY_FORCE(std::string);
-  ANY_FORCE(std::vector<boost::shared_array<double> >);
-  ANY_FORCE(std::vector<boost::shared_array<int> >);
-  ANY_FORCE(std::vector<double>);
-  ANY_FORCE(std::vector<int>);
-  ANY_FORCE(std::vector<std::list<int> >);
-  ANY_FORCE(std::vector<std::string>);
-  ANY_FORCE(std::vector<std::vector<double> >);
-  ANY_FORCE(std::vector<std::vector<int> >);
-  ANY_FORCE(std::vector<unsigned int>);
-  ANY_FORCE(std::vector<unsigned long long>);
-  ANY_FORCE(unsigned int);
+  ANY_FORCE(bool)
+  ANY_FORCE(boost::shared_array<double>)
+  ANY_FORCE(boost::shared_array<int>)
+  ANY_FORCE(double)
+  ANY_FORCE(int)
+  ANY_FORCE(std::list<int>)
+  ANY_FORCE(std::string)
+  ANY_FORCE(std::vector<boost::shared_array<double> >)
+  ANY_FORCE(std::vector<boost::shared_array<int> >)
+  ANY_FORCE(std::vector<double>)
+  ANY_FORCE(std::vector<int>)
+  ANY_FORCE(std::vector<std::list<int> >)
+  ANY_FORCE(std::vector<std::string>)
+  ANY_FORCE(std::vector<std::vector<double> >)
+  ANY_FORCE(std::vector<std::vector<int> >)
+  ANY_FORCE(std::vector<unsigned int>)
+  ANY_FORCE(std::vector<unsigned long long>)
+  ANY_FORCE(unsigned int)
 
   template const std::string & Dict::fromany<const std::string &>(const boost::any &arg) const;
   

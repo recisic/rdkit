@@ -151,16 +151,15 @@ double round(double num){
     int nelem = static_cast<int>(comb.size());
     int celem = nelem - 1;
     
-    while (comb[celem] == (tot - nelem + celem)) {
+    while (comb[static_cast<unsigned int>(celem)] == (tot - nelem + celem)) {
       celem--;
       if (celem < 0) {
 	return -1;
       }
     }
 
-    unsigned int i;
-    comb[celem] += 1;
-    for (i = celem+1; i < comb.size(); i++) {
+    comb[static_cast<unsigned int>(celem)] += 1;
+    for (unsigned int i = static_cast<unsigned int>(celem)+1; i < comb.size(); i++) {
       comb[i] = comb[i-1] + 1;
     }
     return celem;

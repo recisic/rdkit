@@ -1,5 +1,8 @@
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/versions.h.cmake
                ${CMAKE_CURRENT_SOURCE_DIR}/versions.h )
+if(CMAKE_COMPILER_IS_CLANG)
+  ADD_DEFINITIONS("-Wno-c++11-long-long")
+endif()
 
 rdkit_library(RDGeneral
               Invariant.cpp types.cpp utils.cpp RDLog.cpp Dict.cpp SHARED)

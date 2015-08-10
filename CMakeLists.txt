@@ -180,6 +180,7 @@ string(REGEX MATCH "clang" CMAKE_COMPILER_IS_CLANG "${CMAKE_C_COMPILER}")
 
 if(CMAKE_COMPILER_IS_CLANG)
    ADD_DEFINITIONS("-Weverything")
+   ADD_DEFINITIONS("-Wno-exit-time-destructors -Wno-global-constructors")
 endif()
 
 

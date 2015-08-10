@@ -8,8 +8,8 @@
 //  of the RDKit source tree.
 //
 
-#ifndef __RD_INVARIANT_H__
-#define __RD_INVARIANT_H__
+#ifndef RD_INVARIANT_H_
+#define RD_INVARIANT_H_
 
 #include <assert.h>
 #include <string>
@@ -61,7 +61,7 @@ namespace Invar {
 	line_d( line )
     {
     }
-    ~Invariant() throw () {};
+    ~Invariant() throw () {}
 
     std::string 
     getMessage() const

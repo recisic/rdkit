@@ -268,7 +268,7 @@ namespace RDKit {
   //! rounds a value to the closest int
   double round(double v);  
 
-}; // end of namespace
+} // end of namespace
 
 
 

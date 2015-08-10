@@ -135,7 +135,7 @@ namespace RDKit{
     DATA_SPTR d_data;
 
     void initFromText(const char *pkl,const unsigned int len);
-  }
+  };
 
   unsigned int computeL1Norm(const DiscreteValueVect &v1, const DiscreteValueVect &v2);
 
@@ -144,7 +144,7 @@ namespace RDKit{
   DiscreteValueVect operator- (const DiscreteValueVect& p1,
 			       const DiscreteValueVect& p2);
 
-};
+}
 
 
 

@@ -173,10 +173,16 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 include_directories(${RDKit_CodeDir})
 
-
-# Detect clang, which masquerades as gcc.  CMake 2.6 doesn't know how to
-# detect it.
-string(REGEX MATCH "clang" CMAKE_COMPILER_IS_CLANG "${CMAKE_C_COMPILER}")
+# Detect clang, which masquerades as gcc.  
+if(CMAKE_MAJOR_VERSION EQUAL 2 AND (CMAKE_MINOR_VERSION EQUAL 6))
+  # CMake 2.6 doesn't know how to
+  # detect it.
+  string(REGEX MATCH "clang" CMAKE_COMPILER_IS_CLANG "${CMAKE_C_COMPILER}")
+else()
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_COMPILER_IS_CLANG TRUE)
+  endif()
+endif()
 
 if(CMAKE_COMPILER_IS_CLANG)
    ADD_DEFINITIONS("-Weverything")

@@ -50,11 +50,11 @@ namespace RDKit{
     //! constructor from a pickle
     DiscreteValueVect(const std::string pkl){
       initFromText(pkl.c_str(),pkl.size());
-    };
+    }
     //! constructor from a pickle
     DiscreteValueVect(const char *pkl,const unsigned int len){
       initFromText(pkl,len);
-    };
+    }
 
     ~DiscreteValueVect() {}
 
@@ -62,7 +62,7 @@ namespace RDKit{
     unsigned int getVal(unsigned int i) const;
 
     //! support indexing using []
-    int operator[] (unsigned int idx) const { return getVal(idx); };
+    int operator[] (unsigned int idx) const { return getVal(idx); }
 
     //! set the value at an index
     /*!
@@ -77,7 +77,7 @@ namespace RDKit{
     //! returns the length
     unsigned int getLength() const;
     //! returns the length
-    unsigned int size() const { return getLength(); };
+    unsigned int size() const { return getLength(); }
 
     //! return a pointer to our raw data storage
     const boost::uint32_t *getData() const;
@@ -135,7 +135,7 @@ namespace RDKit{
     DATA_SPTR d_data;
 
     void initFromText(const char *pkl,const unsigned int len);
-  };
+  }
 
   unsigned int computeL1Norm(const DiscreteValueVect &v1, const DiscreteValueVect &v2);
 
@@ -144,7 +144,7 @@ namespace RDKit{
   DiscreteValueVect operator- (const DiscreteValueVect& p1,
 			       const DiscreteValueVect& p2);
 
-} 
+};
 
 
 

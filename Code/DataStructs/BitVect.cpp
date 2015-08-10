@@ -18,7 +18,7 @@
 #endif
 #include <boost/cstdint.hpp>
 
-BitVect::~BitVect() {}; // must always implement virtual destructors
+BitVect::~BitVect() {} // must always implement virtual destructors
 
 void BitVect::initFromText(const char *data,const unsigned int dataLen,
                    bool isBase64,bool allowOldFormat){
@@ -26,7 +26,7 @@ void BitVect::initFromText(const char *data,const unsigned int dataLen,
   if(isBase64){
     unsigned int actualLen;
     char *decoded;
-    decoded = Base64Decode((const char *)data,&actualLen);
+    decoded = Base64Decode(data,&actualLen);
     ss.write(decoded,actualLen);
     delete [] decoded;
   } else {
@@ -58,7 +58,7 @@ void BitVect::initFromText(const char *data,const unsigned int dataLen,
   }
 
   RDKit::streamRead(ss,nOn);
-  _initForSize(static_cast<int>(size));
+  _initForSize(static_cast<unsigned int>(size));
 
   // if the either have older version or or version 16 with ints for on bits
   if( (format==0) || 

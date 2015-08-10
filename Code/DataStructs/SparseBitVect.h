@@ -34,9 +34,9 @@ typedef IntSet::const_iterator IntSetConstIter;
  */
 class SparseBitVect : public BitVect{
 public:
-  SparseBitVect() : dp_bits(0), d_size(0) {};
+  SparseBitVect() : dp_bits(0), d_size(0) {}
   //! initialize with a particular size;
-  explicit SparseBitVect(unsigned int size): dp_bits(0), d_size(0) {_initForSize(size); };
+  explicit SparseBitVect(unsigned int size): dp_bits(0), d_size(0) {_initForSize(size); }
 
   //! copy constructor
   SparseBitVect(const SparseBitVect& other){
@@ -51,7 +51,7 @@ public:
   SparseBitVect(const char *data,const unsigned int dataLen);
 
   SparseBitVect& operator=(const SparseBitVect&);
-  ~SparseBitVect(){ delete dp_bits; };
+  ~SparseBitVect(){ delete dp_bits; }
 
   bool operator[](const unsigned int which) const;
   SparseBitVect operator| (const SparseBitVect&) const;
@@ -62,7 +62,7 @@ public:
   //! returns a (const) pointer to our raw storage
   const IntSet *getBitSet() const { return dp_bits;}
 
-  unsigned int getNumBits() const { return d_size; };
+  unsigned int getNumBits() const { return d_size; }
   bool setBit(const unsigned int which);
   bool setBit(const IntSetIter which);
   bool unsetBit(const unsigned int which);
@@ -70,13 +70,13 @@ public:
   bool getBit(const IntVectIter which) const;
   bool getBit(const IntSetIter which) const;
 
-  unsigned int getNumOnBits() const { return dp_bits->size(); };
-  unsigned int getNumOffBits() const { return d_size - dp_bits->size(); };
+  unsigned int getNumOnBits() const { return dp_bits->size(); }
+  unsigned int getNumOffBits() const { return d_size - dp_bits->size(); }
 
   std::string toString() const;
 
   void getOnBits (IntVect& v) const;
-  void clearBits() { dp_bits->clear(); };
+  void clearBits() { dp_bits->clear(); }
   IntSet *dp_bits; //!< our raw data, exposed for the sake of efficiency
 
   bool operator==(const SparseBitVect &o) const {

@@ -154,25 +154,25 @@ namespace RDKit{
       shift = 1;
     }
     else if ((val&3) == 1) {
-      ss.read(static_cast<char *>(&tmp), sizeof(tmp));
+      ss.read(reinterpret_cast<char *>(&tmp), sizeof(tmp));
       val |= (static_cast<boost::uint32_t>(tmp) << 8);
       shift = 2;
       offset = (1<<7);
     }
     else if ((val&7) == 3) {
-      ss.read(static_cast<char *>(&tmp), sizeof(tmp));
+      ss.read(reinterpret_cast<char *>(&tmp), sizeof(tmp));
       val |= (static_cast<boost::uint32_t>(tmp) << 8);
-      ss.read(static_cast<char *>(&tmp), sizeof(tmp));
+      ss.read(reinterpret_cast<char *>(&tmp), sizeof(tmp));
       val |= (static_cast<boost::uint32_t>(tmp) << 16);
       shift = 3;
       offset = (1<<7) + (1<<14);
     }
     else {
-      ss.read(static_cast<char *>(&tmp), sizeof(tmp));
+      ss.read(reinterpret_cast<char *>(&tmp), sizeof(tmp));
       val |= (static_cast<boost::uint32_t>(tmp) << 8);
-      ss.read(static_cast<char *>(&tmp), sizeof(tmp));
+      ss.read(reinterpret_cast<char *>(&tmp), sizeof(tmp));
       val |= (static_cast<boost::uint32_t>(tmp) << 16);
-      ss.read(static_cast<char *>(&tmp), sizeof(tmp));
+      ss.read(reinterpret_cast<char *>(&tmp), sizeof(tmp));
       val |= (static_cast<boost::uint32_t>(tmp) << 24);
       shift = 3;
       offset = (1<<7) + (1<<14) + (1<<21);
@@ -234,13 +234,13 @@ namespace RDKit{
   template <typename T>
     void streamWrite(std::ostream &ss,const T &val){
     T tval=EndianSwapBytes<HOST_ENDIAN_ORDER,LITTLE_ENDIAN_ORDER>(val);
-    ss.write(static_cast<const char *>(&tval),sizeof(T));
+    ss.write(reinterpret_cast<const char *>(&tval),sizeof(T));
   }
   //! does a binary read of an object from a stream
   template <typename T>
     void streamRead(std::istream &ss,T &loc){
     T tloc;
-    ss.read(static_cast<char *>(&tloc),sizeof(T));
+    ss.read(reinterpret_cast<char *>(&tloc),sizeof(T));
     loc = EndianSwapBytes<LITTLE_ENDIAN_ORDER,HOST_ENDIAN_ORDER>(tloc);
   }
  

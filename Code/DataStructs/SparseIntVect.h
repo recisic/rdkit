@@ -28,10 +28,10 @@ namespace RDKit{
   public:
     typedef std::map<IndexType,int> StorageType;
   
-    SparseIntVect() : d_length(0) {};
+    SparseIntVect() : d_length(0) {}
 
     //! initialize with a particular length
-    SparseIntVect(IndexType length) : d_length(length) {};
+    SparseIntVect(IndexType length) : d_length(length) {}
 
     //! Copy constructor
     SparseIntVect(const SparseIntVect<IndexType> &other){
@@ -42,11 +42,11 @@ namespace RDKit{
     //! constructor from a pickle
     SparseIntVect(const std::string pkl){
       initFromText(pkl.c_str(),pkl.size());
-    };
+    }
     //! constructor from a pickle
     SparseIntVect(const char *pkl,const unsigned int len){
       initFromText(pkl,len);
-    };
+    }
 
     //! destructor (doesn't need to do anything)
     ~SparseIntVect() {}
@@ -66,7 +66,7 @@ namespace RDKit{
         res=iter->second;
       }
       return res;
-    };
+    }
 
     //! set the value at an index
     void setVal(IndexType idx, int val){
@@ -78,15 +78,15 @@ namespace RDKit{
       } else {
         d_data.erase(idx);
       }
-    };
+    }
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
     //! support indexing using []
-    int operator[] (IndexType idx) const { return getVal(idx); };
+    int operator[] (IndexType idx) const { return getVal(idx); }
 
     //! returns the length
-    IndexType getLength() const { return d_length; };
+    IndexType getLength() const { return d_length; }
 
     //! returns the sum of all the elements in the vect
     //! the doAbs argument toggles summing the absolute values of the elements
@@ -98,9 +98,9 @@ namespace RDKit{
         else res+=abs(iter->second);
       }
       return res;
-    };
+    }
     //! returns the length
-    unsigned int size() const { return getLength(); };
+    unsigned int size() const { return getLength(); }
 
 
     //! returns our nonzero elements as a map(IndexType->int)
@@ -142,7 +142,7 @@ namespace RDKit{
         }
       }
       return *this;
-    };
+    }
     const SparseIntVect<IndexType> 
     operator& (const SparseIntVect<IndexType> &other) const {
       SparseIntVect<IndexType> res(*this);
@@ -182,7 +182,7 @@ namespace RDKit{
         ++oIter;
       }
       return *this;
-    };
+    }
     const SparseIntVect<IndexType> 
     operator| (const SparseIntVect<IndexType> &other) const {
       SparseIntVect<IndexType> res(*this);
@@ -218,7 +218,7 @@ namespace RDKit{
         ++oIter;
       }
       return *this;
-    };
+    }
     const SparseIntVect<IndexType> 
     operator+ (const SparseIntVect<IndexType> &other) const {
       SparseIntVect<IndexType> res(*this);
@@ -254,7 +254,7 @@ namespace RDKit{
         ++oIter;
       }
       return *this;
-    };
+    }
     const SparseIntVect<IndexType> 
     operator- (const SparseIntVect<IndexType> &other) const {
       SparseIntVect<IndexType> res(*this);
@@ -268,12 +268,12 @@ namespace RDKit{
         ++iter;
       }
       return *this;
-    };
+    }
     SparseIntVect<IndexType> &
     operator* (int v) {
       SparseIntVect<IndexType> res(*this);
       return res*=v;
-    };
+    }
     SparseIntVect<IndexType> &
     operator/= (int v) {
       typename StorageType::iterator iter=d_data.begin();
@@ -282,12 +282,12 @@ namespace RDKit{
         ++iter;
       }
       return *this;
-    };
+    }
     SparseIntVect<IndexType> &
     operator/ (int v) {
       SparseIntVect<IndexType> res(*this);
       return res/=v;
-    };
+    }
     SparseIntVect<IndexType> &
     operator+= (int v) {
       typename StorageType::iterator iter=d_data.begin();
@@ -296,12 +296,12 @@ namespace RDKit{
         ++iter;
       }
       return *this;
-    };
+    }
     SparseIntVect<IndexType> &
     operator+ (int v) {
       SparseIntVect<IndexType> res(*this);
       return res+=v;
-    };
+    }
     SparseIntVect<IndexType> &
     operator-= (int v) {
       typename StorageType::iterator iter=d_data.begin();
@@ -310,12 +310,12 @@ namespace RDKit{
         ++iter;
       }
       return *this;
-    };
+    }
     SparseIntVect<IndexType> &
     operator- (int v) {
       SparseIntVect<IndexType> res(*this);
       return res-=v;
-    };
+    }
 
     bool operator==(const SparseIntVect<IndexType> &v2) const{
       if(d_length!=v2.d_length){
@@ -347,7 +347,7 @@ namespace RDKit{
         ++iter;
       }
       return ss.str();
-    };
+    }
 
     void fromString(const std::string &txt) {
       initFromText(txt.c_str(),txt.length());
@@ -383,7 +383,7 @@ namespace RDKit{
       } else {
         throw ValueErrorException("bad version in SparseIntVect pickle");
       }
-    };
+    }
     template <typename T>
     void readVals(std::stringstream &ss){
       PRECONDITION(sizeof(T)<=sizeof(IndexType),"invalid size");
@@ -399,7 +399,7 @@ namespace RDKit{
         d_data[tVal]=val;
       }
     }
-  };
+  }
 
   template <typename IndexType, typename SequenceType>
   void updateFromSequence(SparseIntVect<IndexType> &vect,
@@ -549,7 +549,7 @@ namespace RDKit{
     return TverskySimilarity(v1,v2,1.0,1.0,returnDistance,bounds);
   }
 
-} 
+};
 
 
 

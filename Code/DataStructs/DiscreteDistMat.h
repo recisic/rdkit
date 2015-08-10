@@ -15,7 +15,7 @@ namespace RDKit{
   class DiscreteDistMat {
   public:
     DiscreteDistMat();
-    ~DiscreteDistMat(){};
+    ~DiscreteDistMat(){}
     unsigned int getDist(unsigned char v1, 
                          unsigned char v2, 
                          DiscreteValueVect::DiscreteValueType type);

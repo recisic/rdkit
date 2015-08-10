@@ -25,9 +25,9 @@
  */
 class ExplicitBitVect : public BitVect {
 public:
-  ExplicitBitVect() : dp_bits(0), d_size(0), d_numOnBits(0) {};
+  ExplicitBitVect() : dp_bits(0), d_size(0), d_numOnBits(0) {}
   //! initialize with a particular size;
-  explicit ExplicitBitVect(unsigned int size) : dp_bits(0), d_size(0), d_numOnBits(0) {_initForSize(size);};
+  explicit ExplicitBitVect(unsigned int size) : dp_bits(0), d_size(0), d_numOnBits(0) {_initForSize(size);}
   //! initialize with a particular size and all bits set
   ExplicitBitVect(unsigned int size, bool bitsSet);
   ExplicitBitVect(const ExplicitBitVect& other);
@@ -63,7 +63,7 @@ public:
 
   void getOnBits (IntVect& v) const;
 
-  void clearBits() { dp_bits->reset(); };
+  void clearBits() { dp_bits->reset(); }
   std::string toString() const;
   
   boost::dynamic_bitset<> *dp_bits; //!< our raw storage

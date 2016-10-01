@@ -93,6 +93,7 @@ typedef unsigned long long int	uintmax_t;
 #endif
 
 %shared_ptr(std::exception)
+%shared_ptr(RDKit::RDProps)
 %shared_ptr(RDKit::ROMol)
 %shared_ptr(RDKit::RWMol)
 %shared_ptr(RDKit::Atom)
@@ -154,6 +155,7 @@ typedef unsigned long long int	uintmax_t;
 %include "../types.i"
 // Conformer seems to need to come before ROMol
 %include "../Conformer.i"
+%include "../RDProps.i"
 %include "../ROMol.i"
 %include "../RWMol.i"
 %include "../Bond.i"
@@ -191,6 +193,7 @@ typedef unsigned long long int	uintmax_t;
 %include "../FMCS.i"
 %include "../MolDraw2D.i"
 %include "../FilterCatalog.i"
+%include "../Trajectory.i"
 
 // Create a class to throw various sorts of errors for testing.  Required for unit tests in ErrorHandlingTests.java
 #ifdef INCLUDE_ERROR_GENERATOR

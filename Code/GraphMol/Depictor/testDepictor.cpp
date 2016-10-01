@@ -769,6 +769,60 @@ void testGitHubIssue78() {
   }
 }
 
+void testGitHubIssue910() {
+  {
+    // this is a ChEMBL molecule
+    std::string smiles =
+        "CSCC[C@H](NC(=O)[C@@H](CCC(N)=O)NC(=O)[C@@H](N)Cc1c[nH]c2ccccc12)C(=O)"
+        "NCC(=O)N[C@@H](Cc1c[nH]cn1)C(=O)N[C@@H](CO)C(=O)O";
+    RWMol *m = SmilesToMol(smiles);
+    TEST_ASSERT(m);
+
+    // add chiral Hs, they were part of the problem
+    std::vector<unsigned int> chiralAts;
+    for (RWMol::AtomIterator atIt = m->beginAtoms(); atIt != m->endAtoms();
+         ++atIt) {
+      if ((*atIt)->getChiralTag() == Atom::CHI_TETRAHEDRAL_CCW ||
+          (*atIt)->getChiralTag() == Atom::CHI_TETRAHEDRAL_CW) {
+        chiralAts.push_back((*atIt)->getIdx());
+      }
+    }
+    MolOps::addHs(*m, false, false, &chiralAts);
+    RDDepict::compute2DCoords(*m, NULL, true);
+
+    // now look for close contacts.
+    const Conformer &conf = m->getConformer();
+    for (unsigned int i = 0; i < conf.getNumAtoms(); ++i) {
+      for (unsigned int j = i + 1; j < conf.getNumAtoms(); ++j) {
+        double l = (conf.getAtomPos(i) - conf.getAtomPos(j)).length();
+        TEST_ASSERT(l > 0.75);
+      }
+    }
+
+    delete m;
+  }
+}
+
+void testGitHubIssue1073() {
+  // computeInitialCoords() should call the SSSR code before it calls
+  // assignStereochemistry()
+  {
+    std::string smarts = "[a]12[a][a][a][a][a]1[a][a][a]2";
+    RWMol *m = SmartsToMol(smarts);
+    TEST_ASSERT(m);
+
+    RDDepict::compute2DCoords(*m);
+
+    RingInfo *ri = m->getRingInfo();
+    TEST_ASSERT(ri->isInitialized());
+    TEST_ASSERT(ri->isAtomInRingOfSize(0, 6));
+    TEST_ASSERT(ri->isAtomInRingOfSize(0, 5));
+    TEST_ASSERT(!ri->isAtomInRingOfSize(0, 9));
+
+    delete m;
+  }
+}
+
 int main() {
   RDLog::InitLogs();
 #if 1
@@ -923,6 +977,20 @@ int main() {
       << "***********************************************************\n";
   BOOST_LOG(rdInfoLog) << "   Test GitHub Issue 78\n";
   testGitHubIssue78();
+  BOOST_LOG(rdInfoLog)
+      << "***********************************************************\n";
+
+  BOOST_LOG(rdInfoLog)
+      << "***********************************************************\n";
+  BOOST_LOG(rdInfoLog) << "   Test GitHub Issue 910\n";
+  testGitHubIssue910();
+  BOOST_LOG(rdInfoLog)
+      << "***********************************************************\n";
+
+  BOOST_LOG(rdInfoLog)
+      << "***********************************************************\n";
+  BOOST_LOG(rdInfoLog) << "   Test GitHub Issue 1073\n";
+  testGitHubIssue1073();
   BOOST_LOG(rdInfoLog)
       << "***********************************************************\n";
 

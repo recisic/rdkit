@@ -141,6 +141,9 @@ AtomPDBResidueInfo *AtomGetPDBResidueInfo(Atom *atom) {
   return (AtomPDBResidueInfo *)res;
 }
 
+struct MDLDummy {};
+struct DaylightDummy {};
+
 // FIX: is there any reason at all to not just prevent the construction of
 // Atoms?
 std::string atomClassDoc =
@@ -230,7 +233,7 @@ struct atom_wrapper {
 
         .def("GetOwningMol", &Atom::getOwningMol,
              "Returns the Mol that owns this atom.\n",
-             python::return_value_policy<python::reference_existing_object>())
+             python::return_internal_reference<>())
 
         .def("GetNeighbors", AtomGetNeighbors,
              "Returns a read-only sequence of the atom's neighbors\n")
@@ -292,9 +295,10 @@ struct atom_wrapper {
              (python::arg("self"), python::arg("key"), python::arg("val")),
              "Sets an atomic property\n\n"
              "  ARGUMENTS:\n"
-             "    - key: the name of the property to be set (an unsigned integer).\n"
+             "    - key: the name of the property to be set (an unsigned "
+             "integer).\n"
              "    - value: the property value (a int >= 0).\n\n")
-        
+
         .def("GetIntProp", GetProp<Atom, int>,
              "Returns the value of the property.\n\n"
              "  ARGUMENTS:\n"
@@ -307,7 +311,8 @@ struct atom_wrapper {
         .def("GetUnsignedProp", GetProp<Atom, unsigned>,
              "Returns the value of the property.\n\n"
              "  ARGUMENTS:\n"
-             "    - key: the name of the property to return (an unsigned integer).\n\n"
+             "    - key: the name of the property to return (an unsigned "
+             "integer).\n\n"
              "  RETURNS: an integer (Python has no unsigned type)\n\n"
              "  NOTE:\n"
              "    - If the property has not been set, a KeyError exception "
@@ -357,13 +362,17 @@ struct atom_wrapper {
              "  ARGUMENTS:\n"
              "    - key: the name of the property to be removed.\n")
 
-        .def("GetPropNames", &Atom::getPropList, (python::arg("self")),
+        .def("GetPropNames", &Atom::getPropList,
+             (python::arg("self"), python::arg("includePrivate") = false,
+              python::arg("includeComputed") = false),
              "Returns a list of the properties set on the Atom.\n\n")
 
-        .def("GetPropsAsDict", GetPropsAsDict<Atom>, (python::arg("self")),
+        .def("GetPropsAsDict", GetPropsAsDict<Atom>,
+             (python::arg("self"), python::arg("includePrivate") = true,
+              python::arg("includeComputed") = true),
              "Returns a dictionary of the properties set on the Atom.\n"
              " n.b. some properties cannot be converted to python types.\n")
-        
+
         .def("UpdatePropertyCache", &Atom::updatePropertyCache,
              (python::arg("self"), python::arg("strict") = true),
              "Regenerates computed properties like implicit valence and ring "
@@ -383,7 +392,13 @@ struct atom_wrapper {
                  1, python::with_custodian_and_ward_postcall<0, 1> >(),
              "Returns the atom's MonomerInfo object, if there is one.\n\n")
         .def("SetMonomerInfo", SetAtomMonomerInfo,
-             "Sets the atom's MonomerInfo object.\n\n");
+             "Sets the atom's MonomerInfo object.\n\n")
+        .def("GetAtomMapNum", &Atom::getAtomMapNum,
+             "Gets the atoms map number, returns 0 if not set")
+        .def("SetAtomMapNum", &Atom::setAtomMapNum,
+             (python::arg("self"), python::arg("mapno"),
+              python::arg("strict") = false),
+             "Sets the atoms map number, a value of 0 clears the atom map");
 
     python::enum_<Atom::HybridizationType>("HybridizationType")
         .value("UNSPECIFIED", Atom::UNSPECIFIED)
@@ -418,7 +433,42 @@ These cannot currently be constructed directly from Python\n";
               python::arg("how") = Queries::COMPOSITE_AND,
               python::arg("maintainOrder") = true),
              "combines the query from other with ours");
-  };
+
+    python::def(
+        "GetAtomRLabel", getAtomRLabel, (python::arg("atom")),
+        "Returns the atom's MDL AtomRLabel (this is an integer from 0 to 99)");
+    python::def("SetAtomRLabel", setAtomRLabel,
+                (python::arg("atom"), python::arg("rlabel")),
+                "Sets the atom's MDL RLabel (this is an integer from 0 to "
+                "99).\nSetting to 0 clears the rlabel.");
+
+    python::def("GetAtomAlias", getAtomAlias, (python::arg("atom")),
+                "Returns the atom's MDL alias text");
+    python::def("SetAtomAlias", setAtomAlias,
+                (python::arg("atom"), python::arg("rlabel")),
+                "Sets the atom's MDL alias text.\nSetting to an empty string "
+                "clears the alias.");
+    python::def("GetAtomValue", getAtomValue, (python::arg("atom")),
+                "Returns the atom's MDL alias text");
+    python::def("SetAtomValue", setAtomValue,
+                (python::arg("atom"), python::arg("rlabel")),
+                "Sets the atom's MDL alias text.\nSetting to an empty string "
+                "clears the alias.");
+
+    python::def("GetSupplementalSmilesLabel", getSupplementalSmilesLabel,
+                (python::arg("atom")),
+                "Gets the supplemental smiles label on an atom, returns an "
+                "empty string if not present.");
+    python::def(
+        "SetSupplementalSmilesLabel", setSupplementalSmilesLabel,
+        (python::arg("atom"), python::arg("label")),
+        "Sets a supplemental label on an atom that is written to the smiles "
+        "string.\n"
+        ">>> m = Chem.MolFromSmiles(\"C\")\n"
+        ">>> Chem.SetSupplementalSmilesLabel(m.GetAtomWithIdx(0), '<xxx>')\n"
+        ">>> Chem.MolToSmiles(m)\n"
+        "'C<xxx>'\n");
+  }
 };
 }  // end of namespace
 void wrap_atom() { RDKit::atom_wrapper::wrap(); }

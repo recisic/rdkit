@@ -18,7 +18,6 @@ The timing information below was collected on a commodity desktop PC (Dell Studi
 
 To improve performance while loading the database and building the index, I changed a couple of postgres configuration settings in postgresql.conf :
 
-    fsync = off               # turns forced synchronization on or off
     synchronous_commit = off      # immediate fsync at commit
     full_page_writes = off            # recover from partial page writes
 
@@ -92,6 +91,27 @@ Create some fingerprints and build the similarity search index:
     chembl_14=# alter table rdk.fps add primary key (molregno);
     NOTICE:  ALTER TABLE / ADD PRIMARY KEY will create implicit index "fps_pkey" for table "fps"
     ALTER TABLE
+
+Here is a group of the commands used here (and below) in one block so that you can just paste it in at the psql prompt:
+
+    create extension if not exists rdkit;
+    create schema rdk;
+    select * into rdk.mols from (select molregno,mol_from_ctab(molfile::cstring) m  from compound_structures) tmp where m is not null;
+    create index molidx on rdk.mols using gist(m);
+    alter table rdk.mols add primary key (molregno);
+    select molregno,torsionbv_fp(m) as torsionbv,morganbv_fp(m) as mfp2,featmorganbv_fp(m) as ffp2 into rdk.fps from rdk.mols;
+    create index fps_ttbv_idx on rdk.fps using gist(torsionbv);
+    create index fps_mfp2_idx on rdk.fps using gist(mfp2);
+    create index fps_ffp2_idx on rdk.fps using gist(ffp2);
+    alter table rdk.fps add primary key (molregno);
+    create or replace function get_mfp2_neighbors(smiles text)
+    returns table(molregno integer, m mol, similarity double precision) as
+  $$
+  select molregno,m,tanimoto_sml(morganbv_fp(mol_from_smiles($1::cstring)),mfp2) as similarity
+  from rdk.fps join rdk.mols using (molregno)
+  where morganbv_fp(mol_from_smiles($1::cstring))%mfp2
+  order by morganbv_fp(mol_from_smiles($1::cstring))<%>mfp2;
+  $$ language sql stable ;
 
 ### Substructure searches
 
@@ -428,21 +448,21 @@ Available parameters and their default values are:
 
 -   % : operator used for similarity searches using Tanimoto similarity. Returns whether or not the Tanimoto similarity between two fingerprints (either two sfp or two bfp values) exceeds rdkit.tanimoto\_threshold.
 -   \# : operator used for similarity searches using Dice similarity. Returns whether or not the Dice similarity between two fingerprints (either two sfp or two bfp values) exceeds rdkit.dice\_threshold.
--   \<%\> : used for Tanimoto KNN searches (to return ordered lists of neighbors).
--   \<\#\> : used for Dice KNN searches (to return ordered lists of neighbors).
+-   <%\> : used for Tanimoto KNN searches (to return ordered lists of neighbors).
+-   <\#\> : used for Dice KNN searches (to return ordered lists of neighbors).
 
 #### Substructure and exact structure search
 
 -   @\> : substructure search operator. Returns whether or not the mol or qmol on the right is a substructure of the mol on the left.
--   \<@ : substructure search operator. Returns whether or not the mol or qmol on the left is a substructure of the mol on the right.
+-   <@ : substructure search operator. Returns whether or not the mol or qmol on the left is a substructure of the mol on the right.
 -   @= : returns whether or not two molecules are the same.
 
 #### Molecule comparison
 
--   \< : returns whether or not the left mol is less than the right mol
+-   < : returns whether or not the left mol is less than the right mol
 -   \> : returns whether or not the left mol is greater than the right mol
 -   = : returns whether or not the left mol is equal to the right mol
--   \<= : returns whether or not the left mol is less than or equal to the right mol
+-   <= : returns whether or not the left mol is less than or equal to the right mol
 -   \>= : returns whether or not the left mol is greater than or equal to the right mol
 
 *Note* Two molecules are compared by making the following comparisons in order. Later comparisons are only made if the preceding values are equal:

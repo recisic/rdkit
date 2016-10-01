@@ -72,6 +72,8 @@ void buildCIPInvariants(const ROMol &mol, DOUBLE_VECT &res) {
   //
   for (ROMol::ConstAtomIterator atIt = mol.beginAtoms(); atIt != mol.endAtoms();
        ++atIt) {
+    const unsigned short nMassBits = 10;
+    const unsigned short maxMass = 1 << nMassBits;
     Atom const *atom = *atIt;
     unsigned long invariant = 0;
     int num = atom->getAtomicNum() % 128;
@@ -83,11 +85,11 @@ void buildCIPInvariants(const ROMol &mol, DOUBLE_VECT &res) {
           PeriodicTable::getTable()->getMostCommonIsotope(atom->getAtomicNum());
       if (mass >= 0) mass += 1;
     }
-    mass += 8;
+    mass += maxMass / 2;
     if (mass < 0)
       mass = 0;
     else
-      mass = mass % 16;
+      mass = mass % maxMass;
 
 #if 0
         // NOTE: the inclusion of hybridization in the invariant (as
@@ -111,7 +113,7 @@ void buildCIPInvariants(const ROMol &mol, DOUBLE_VECT &res) {
 #endif
 
     invariant = num;  // 7 bits here
-    invariant = (invariant << 4) | mass;
+    invariant = (invariant << nMassBits) | mass;
 
     int mapnum = -1;
     atom->getPropIfPresent(common_properties::molAtomMapNumber, mapnum);
@@ -317,9 +319,10 @@ void findAtomNeighborDirHelper(const ROMol &mol, const Atom *atom,
     // check whether this bond is explictly set to have unknown stereo
     if (!hasExplicitUnknownStereo) {
       int explicit_unknown_stereo;
-      if (bond->getPropIfPresent<int>(common_properties::_UnknownStereo,
-                                      explicit_unknown_stereo) &&
-          explicit_unknown_stereo)
+      if (bond->getBondDir() == Bond::UNKNOWN  // there's a squiggle bond
+          || (bond->getPropIfPresent<int>(common_properties::_UnknownStereo,
+                                          explicit_unknown_stereo) &&
+              explicit_unknown_stereo))
         hasExplicitUnknownStereo = true;
     }
 
@@ -449,65 +452,141 @@ bool atomIsCandidateForRingStereochem(const ROMol &mol, const Atom *atom) {
   return res;
 }
 
-// returns true if the atom is allowed to have stereochemistry specified
-bool checkChiralAtomSpecialCases(ROMol &mol, const Atom *atom) {
-  PRECONDITION(atom, "bad atom");
-
+// finds all possible chiral special cases.
+// at the moment this is just candidates for ring stereochemistry
+void findChiralAtomSpecialCases(ROMol &mol,
+                                boost::dynamic_bitset<> &possibleSpecialCases) {
+  PRECONDITION(possibleSpecialCases.size() >= mol.getNumAtoms(),
+               "bit vector too small");
+  possibleSpecialCases.reset();
   if (!mol.getRingInfo()->isInitialized()) {
     VECT_INT_VECT sssrs;
     MolOps::symmetrizeSSSR(mol, sssrs);
   }
+  boost::dynamic_bitset<> atomsSeen(mol.getNumAtoms());
+  boost::dynamic_bitset<> atomsUsed(mol.getNumAtoms());
+  boost::dynamic_bitset<> bondsSeen(mol.getNumBonds());
 
-  const RingInfo *ringInfo = mol.getRingInfo();
-  if (ringInfo->numAtomRings(atom->getIdx()) &&
-      atomIsCandidateForRingStereochem(mol, atom)) {
-    // the atom is in a ring, so the "chirality" specification may actually
-    // be handling ring stereochemistry.
-
-    // check for another chiral tagged
-    // atom without stereochem in this atom's rings:
-    INT_VECT ringStereoAtoms(0);
-    atom->getPropIfPresent(common_properties::_ringStereoAtoms,
-                           ringStereoAtoms);
-
-    const VECT_INT_VECT atomRings = ringInfo->atomRings();
-    for (VECT_INT_VECT::const_iterator ringIt = atomRings.begin();
-         ringIt != atomRings.end(); ++ringIt) {
-      if (std::find(ringIt->begin(), ringIt->end(),
-                    static_cast<int>(atom->getIdx())) != ringIt->end()) {
-        for (INT_VECT::const_iterator idxIt = ringIt->begin();
-             idxIt != ringIt->end(); ++idxIt) {
-          int same = 1;
-          if (*idxIt != static_cast<int>(atom->getIdx()) &&
-              mol.getAtomWithIdx(*idxIt)->getChiralTag() !=
-                  Atom::CHI_UNSPECIFIED &&
-              !mol.getAtomWithIdx(*idxIt)
-                   ->hasProp(common_properties::_CIPCode) &&
-              atomIsCandidateForRingStereochem(mol,
-                                               mol.getAtomWithIdx(*idxIt))) {
-            // we get to keep the stereochem specification on this atom:
-            if (mol.getAtomWithIdx(*idxIt)->getChiralTag() !=
-                atom->getChiralTag()) {
-              same = -1;
-            }
-            ringStereoAtoms.push_back(same * (*idxIt + 1));
-            INT_VECT oAtoms(0);
-            mol.getAtomWithIdx(*idxIt)
-                ->getPropIfPresent(common_properties::_ringStereoAtoms, oAtoms);
-
-            oAtoms.push_back(same * (atom->getIdx() + 1));
-            mol.getAtomWithIdx(*idxIt)
-                ->setProp(common_properties::_ringStereoAtoms, oAtoms, true);
+  for (ROMol::AtomIterator ait = mol.beginAtoms(); ait != mol.endAtoms();
+       ++ait) {
+    const Atom *atom = *ait;
+    if (atomsSeen[atom->getIdx()]) continue;
+    if (atom->getChiralTag() == Atom::CHI_UNSPECIFIED ||
+        atom->hasProp(common_properties::_CIPCode) ||
+        !mol.getRingInfo()->numAtomRings(atom->getIdx()) ||
+        !atomIsCandidateForRingStereochem(mol, atom)) {
+      continue;
+    }
+    // do a BFS from this ring atom along ring bonds and find other
+    // stereochemistry candidates.
+    std::list<const Atom *> nextAtoms;
+    // start with finding viable neighbors
+    ROMol::OEDGE_ITER beg, end;
+    boost::tie(beg, end) = mol.getAtomBonds(atom);
+    while (beg != end) {
+      unsigned int bidx = mol[*beg]->getIdx();
+      if (!bondsSeen[bidx]) {
+        bondsSeen.set(bidx);
+        if (mol.getRingInfo()->numBondRings(bidx)) {
+          const Atom *oatom = mol[*beg]->getOtherAtom(atom);
+          if (!atomsSeen[oatom->getIdx()]) {
+            nextAtoms.push_back(oatom);
+            atomsUsed.set(oatom->getIdx());
           }
         }
       }
+      ++beg;
     }
-    if (ringStereoAtoms.size()) {
+    INT_VECT ringStereoAtoms(0);
+    if (!nextAtoms.empty()) {
+      atom->getPropIfPresent(common_properties::_ringStereoAtoms,
+                             ringStereoAtoms);
+    }
+
+    while (!nextAtoms.empty()) {
+      const Atom *ratom = nextAtoms.front();
+      nextAtoms.pop_front();
+      atomsSeen.set(ratom->getIdx());
+      if (ratom->getChiralTag() != Atom::CHI_UNSPECIFIED &&
+          !ratom->hasProp(common_properties::_CIPCode) &&
+          atomIsCandidateForRingStereochem(mol, ratom)) {
+        int same = (ratom->getChiralTag() == atom->getChiralTag()) ? 1 : -1;
+        ringStereoAtoms.push_back(same * (ratom->getIdx() + 1));
+        INT_VECT oringatoms(0);
+        ratom->getPropIfPresent(common_properties::_ringStereoAtoms,
+                                oringatoms);
+        oringatoms.push_back(same * (atom->getIdx() + 1));
+        ratom->setProp(common_properties::_ringStereoAtoms, oringatoms, true);
+        possibleSpecialCases.set(ratom->getIdx());
+        possibleSpecialCases.set(atom->getIdx());
+      }
+      // now push this atom's neighbors
+      boost::tie(beg, end) = mol.getAtomBonds(ratom);
+      while (beg != end) {
+        unsigned int bidx = mol[*beg]->getIdx();
+        if (!bondsSeen[bidx]) {
+          bondsSeen.set(bidx);
+          if (mol.getRingInfo()->numBondRings(bidx)) {
+            const Atom *oatom = mol[*beg]->getOtherAtom(ratom);
+            if (!atomsSeen[oatom->getIdx()] && !atomsUsed[oatom->getIdx()]) {
+              nextAtoms.push_back(oatom);
+              atomsUsed.set(oatom->getIdx());
+            }
+          }
+        }
+        ++beg;
+      }
+    }  // end of BFS
+    if (ringStereoAtoms.size() != 0) {
       atom->setProp(common_properties::_ringStereoAtoms, ringStereoAtoms, true);
-      return true;
+      // because we're only going to hit each ring atom once, the first atom we
+      // encounter in a ring is going to end up with all the other atoms set as
+      // stereoAtoms, but each of them will only have the first atom present. We
+      // need to fix that. because the traverse from the first atom only
+      // followed ring bonds, these things are all by definition in one ring
+      // system. (Q: is this true if there's a spiro center in there?)
+      INT_VECT same(mol.getNumAtoms(), 0);
+      BOOST_FOREACH (int ringAtomEntry, ringStereoAtoms) {
+        int ringAtomIdx =
+            ringAtomEntry < 0 ? -ringAtomEntry - 1 : ringAtomEntry - 1;
+        same[ringAtomIdx] = ringAtomEntry;
+      }
+      for (INT_VECT_CI rae = ringStereoAtoms.begin();
+           rae != ringStereoAtoms.end(); ++rae) {
+        int ringAtomEntry = *rae;
+        int ringAtomIdx =
+            ringAtomEntry < 0 ? -ringAtomEntry - 1 : ringAtomEntry - 1;
+        INT_VECT lringatoms(0);
+        mol.getAtomWithIdx(ringAtomIdx)
+            ->getPropIfPresent(common_properties::_ringStereoAtoms, lringatoms);
+        CHECK_INVARIANT(lringatoms.size() > 0, "no other ring atoms found.");
+        for (INT_VECT_CI orae = rae + 1; orae != ringStereoAtoms.end();
+             ++orae) {
+          int oringAtomEntry = *orae;
+          int oringAtomIdx =
+              oringAtomEntry < 0 ? -oringAtomEntry - 1 : oringAtomEntry - 1;
+          int theseDifferent = (ringAtomEntry < 0) ^ (oringAtomEntry < 0);
+          lringatoms.push_back(theseDifferent ? -(oringAtomIdx + 1)
+                                              : (oringAtomIdx + 1));
+          INT_VECT olringatoms(0);
+          mol.getAtomWithIdx(oringAtomIdx)
+              ->getPropIfPresent(common_properties::_ringStereoAtoms,
+                                 olringatoms);
+          CHECK_INVARIANT(olringatoms.size() > 0, "no other ring atoms found.");
+          olringatoms.push_back(theseDifferent ? -(ringAtomIdx + 1)
+                                               : (ringAtomIdx + 1));
+          mol.getAtomWithIdx(oringAtomIdx)
+              ->setProp(common_properties::_ringStereoAtoms, olringatoms);
+        }
+        mol.getAtomWithIdx(ringAtomIdx)
+            ->setProp(common_properties::_ringStereoAtoms, lringatoms);
+      }
+
+    } else {
+      possibleSpecialCases.reset(atom->getIdx());
     }
+    atomsSeen.set(atom->getIdx());
   }
-  return false;
 }
 
 std::pair<bool, bool> isAtomPotentialChiralCenter(
@@ -538,8 +617,6 @@ std::pair<bool, bool> isAtomPotentialChiralCenter(
       }
       codesSeen[ranks[otherIdx]] = 1;
       nbrs.push_back(std::make_pair(ranks[otherIdx], mol[*beg]->getIdx()));
-      // std::cerr<<"      "<< atom->getIdx() << " " << mol[*beg]->getIdx() << "
-      // " << otherIdx << "(" << ranks[otherIdx] <<")"<<std::endl;
       ++beg;
     }
 
@@ -554,7 +631,8 @@ std::pair<bool, bool> isAtomPotentialChiralCenter(
           // otherwise we default to not being a legal center
           legalCenter = false;
           // but there are a few special cases we'll accept
-          // sulfur or selenium with either a positive charge or a double bond:
+          // sulfur or selenium with either a positive charge or a double
+          // bond:
           if ((atom->getAtomicNum() == 16 || atom->getAtomicNum() == 34) &&
               (atom->getExplicitValence() == 4 ||
                (atom->getExplicitValence() == 3 &&
@@ -633,11 +711,6 @@ std::pair<bool, bool> assignAtomChiralCodes(ROMol &mol, UINT_VECT &ranks,
           ++nSwaps;
         }
 
-        // std::cerr<<"nbrs from "<<atom->getIdx()<<" ";
-        // std::copy(nbrIndices.begin(),nbrIndices.end(),std::ostream_iterator<unsigned
-        // int>(std::cerr," "));
-        // std::cerr<<"nSwaps: "<<nSwaps<<" tag: "<<tag<<std::endl;
-
         // if that number is odd, we'll change our chirality:
         if (nSwaps % 2) {
           if (tag == Atom::CHI_TETRAHEDRAL_CCW)
@@ -680,7 +753,8 @@ std::pair<bool, bool> assignBondStereoCodes(ROMol &mol, UINT_VECT &ranks) {
       }
       dblBond->getStereoAtoms().clear();
 
-      // at the moment we are ignoring stereochem on ring bonds with less than 8
+      // at the moment we are ignoring stereochem on ring bonds with less than
+      // 8
       // members.
       if (!mol.getRingInfo()->numBondRings(dblBond->getIdx()) ||
           mol.getRingInfo()->minBondRingSize(dblBond->getIdx()) > 7) {
@@ -842,9 +916,9 @@ void assignStereochemistry(ROMol &mol, bool cleanIt, bool force,
   }
 
 #if 0
-      std::cerr<<">>>>>>>>>>>>>\n";
-      std::cerr<<"assign stereochem\n";
-      mol.debugMol(std::cerr);
+  std::cerr << ">>>>>>>>>>>>>\n";
+  std::cerr << "assign stereochem\n";
+  mol.debugMol(std::cerr);
 #endif
 
   // as part of the preparation, we'll loop over the atoms and
@@ -873,10 +947,13 @@ void assignStereochemistry(ROMol &mol, bool cleanIt, bool force,
   for (ROMol::BondIterator bondIt = mol.beginBonds(); bondIt != mol.endBonds();
        ++bondIt) {
     if (cleanIt) {
-      if ((*bondIt)->getBondType() == Bond::DOUBLE &&
-          (*bondIt)->getStereo() != Bond::STEREOANY) {
-        (*bondIt)->setStereo(Bond::STEREONONE);
-        (*bondIt)->getStereoAtoms().clear();
+      if ((*bondIt)->getBondType() == Bond::DOUBLE) {
+        if ((*bondIt)->getBondDir() == Bond::EITHERDOUBLE) {
+          (*bondIt)->setStereo(Bond::STEREOANY);
+        } else if ((*bondIt)->getStereo() != Bond::STEREOANY) {
+          (*bondIt)->setStereo(Bond::STEREONONE);
+          (*bondIt)->getStereoAtoms().clear();
+        }
       }
     }
     if (!hasStereoBonds && (*bondIt)->getBondType() == Bond::DOUBLE) {
@@ -901,7 +978,6 @@ void assignStereochemistry(ROMol &mol, bool cleanIt, bool force,
       }
     }
   }
-
   UINT_VECT atomRanks;
   bool keepGoing = hasStereoAtoms | hasStereoBonds;
   bool changedStereoAtoms, changedStereoBonds;
@@ -927,9 +1003,11 @@ void assignStereochemistry(ROMol &mol, bool cleanIt, bool force,
       Chirality::rerankAtoms(mol, atomRanks);
     }
 #if 0
-        std::cout<<"*************** done iteration "<<keepGoing<<" ***********"<<std::endl;
-        mol.debugMol(std::cout);
-        std::cout<<"*************** done iteration "<<keepGoing<<" ***********"<<std::endl;
+    std::cout << "*************** done iteration " << keepGoing
+              << " ***********" << std::endl;
+    mol.debugMol(std::cout);
+    std::cout << "*************** done iteration " << keepGoing
+              << " ***********" << std::endl;
 #endif
   }
 
@@ -941,12 +1019,22 @@ void assignStereochemistry(ROMol &mol, bool cleanIt, bool force,
       if ((*atIt)->hasProp(common_properties::_ringStereoAtoms))
         (*atIt)->clearProp(common_properties::_ringStereoAtoms);
     }
+    boost::dynamic_bitset<> possibleSpecialCases(mol.getNumAtoms());
+    Chirality::findChiralAtomSpecialCases(mol, possibleSpecialCases);
+
     for (ROMol::AtomIterator atIt = mol.beginAtoms(); atIt != mol.endAtoms();
          ++atIt) {
       Atom *atom = *atIt;
       if (atom->getChiralTag() != Atom::CHI_UNSPECIFIED &&
           !atom->hasProp(common_properties::_CIPCode) &&
-          !Chirality::checkChiralAtomSpecialCases(mol, atom)) {
+          (possibleSpecialCases[atom->getIdx()] ||
+           atom->hasProp(common_properties::_ringStereoAtoms))) {
+      }
+
+      if (atom->getChiralTag() != Atom::CHI_UNSPECIFIED &&
+          !atom->hasProp(common_properties::_CIPCode) &&
+          (!possibleSpecialCases[atom->getIdx()] ||
+           !atom->hasProp(common_properties::_ringStereoAtoms))) {
         atom->setChiralTag(Atom::CHI_UNSPECIFIED);
 
         // If the atom has an explicit hydrogen and no charge, that H
@@ -1103,11 +1191,12 @@ void findPotentialStereoBonds(ROMol &mol, bool cleanIt) {
                 dblBond->getStereoAtoms().push_back(begAtomNeighbors[0]);
                 dblBond->getStereoAtoms().push_back(endAtomNeighbors[0]);
               }  // end of different number of neighbors on beg and end atoms
-            }  // end of check that beg and end atoms have at least 1 neighbor:
-          }    // end of 2 and 3 coordinated atoms only
-        }      // end of we want it or CIP code is not set
-      }        // end of double bond
-    }          // end of for loop over all bonds
+            }    // end of check that beg and end atoms have at least 1
+                 // neighbor:
+          }      // end of 2 and 3 coordinated atoms only
+        }        // end of we want it or CIP code is not set
+      }          // end of double bond
+    }            // end of for loop over all bonds
     mol.setProp(common_properties::_BondsPotentialStereo, 1, true);
   }
 }
@@ -1147,11 +1236,17 @@ void assignChiralTypesFrom3D(ROMol &mol, int confId, bool replaceExistingTags) {
     }
     atom->setChiralTag(Atom::CHI_UNSPECIFIED);
     // additional reasons to skip the atom:
-    if (atom->getDegree() < 3 ||        // not enough explicit neighbors
-        atom->getTotalDegree() != 4 ||  // not enough total neighbors
-        atom->getTotalNumHs(true) > 1   // more than two Hs
-        ) {
+    if (atom->getDegree() < 3 || atom->getTotalDegree() > 4) {
+      // not enough explicit neighbors or too many total neighbors
       continue;
+    } else {
+      int anum = atom->getAtomicNum();
+      if (anum != 16 && anum != 34 &&  // S or Se are special
+                                       // (just using the InChI list for now)
+          (atom->getTotalDegree() != 4 ||  // not enough total neighbors
+           atom->getTotalNumHs(true) > 1)) {
+        continue;
+      }
     }
     const RDGeom::Point3D &p0 = conf.getAtomPos(atom->getIdx());
     ROMol::ADJ_ITER nbrIdx, endNbrs;

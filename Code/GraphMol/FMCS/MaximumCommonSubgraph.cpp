@@ -31,8 +31,10 @@ struct LabelDefinition {
 
 MaximumCommonSubgraph::MaximumCommonSubgraph(const MCSParameters* params) {
   Parameters = (0 != params ? *params : MCSParameters());
-  if (Parameters.ProgressCallback == MCSProgressCallbackTimeout)
+  if (!Parameters.ProgressCallback) {
+    Parameters.ProgressCallback = MCSProgressCallbackTimeout;
     Parameters.ProgressCallbackUserData = &To;
+  }
   if (Parameters.AtomCompareParameters.MatchChiralTag &&
       0 == Parameters.FinalMatchChecker) {
     Parameters.FinalMatchChecker = FinalChiralityCheckFunction;
@@ -1057,8 +1059,7 @@ bool MaximumCommonSubgraph::matchIncrementalFast(Seed& seed, unsigned itarget) {
                                          // Another atoms
       if (tb) {  // bond exists, check match with query molecule
         unsigned tbi = tb->getIdx();
-        unsigned qbi =
-            seed.MoleculeFragment.BondsIdx[newBondAnotherAtomSeedIdx];
+        unsigned qbi = seed.MoleculeFragment.BondsIdx[newBondSeedIdx];
         if (!match.VisitedTargetBonds[tbi])  // false if target bond is already
                                              // matched
           matched = target.BondMatchTable.at(qbi, tbi);

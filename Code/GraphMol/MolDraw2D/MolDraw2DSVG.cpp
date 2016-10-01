@@ -58,6 +58,44 @@ void MolDraw2DSVG::setColour(const DrawColour &col) {
   MolDraw2D::setColour(col);
 }
 
+void MolDraw2DSVG::drawWavyLine(const Point2D &cds1, const Point2D &cds2,
+                                const DrawColour &col1, const DrawColour &col2,
+                                unsigned int nSegments, double vertOffset) {
+  PRECONDITION(nSegments > 1, "too few segments");
+
+  if (nSegments % 2)
+    ++nSegments;  // we're going to assume an even number of segments
+  setColour(col1);
+
+  Point2D perp = calcPerpendicular(cds1, cds2);
+  Point2D delta = (cds2 - cds1);
+  perp *= vertOffset;
+  delta /= nSegments;
+
+  Point2D c1 = getDrawCoords(cds1);
+
+  std::string col = DrawColourToSVG(colour());
+  unsigned int width = lineWidth();
+  d_os << "<svg:path ";
+  d_os << "d='M" << c1.x << "," << c1.y;
+  for (unsigned int i = 0; i < nSegments; ++i) {
+    Point2D startpt = cds1 + delta * i;
+    Point2D segpt = getDrawCoords(startpt + delta);
+    Point2D cpt1 =
+        getDrawCoords(startpt + delta / 3. + perp * (i % 2 ? -1 : 1));
+    Point2D cpt2 =
+        getDrawCoords(startpt + delta * 2. / 3. + perp * (i % 2 ? -1 : 1));
+    d_os << " C" << cpt1.x << "," << cpt1.y << " " << cpt2.x << "," << cpt2.y
+         << " " << segpt.x << "," << segpt.y;
+  }
+  d_os << "' ";
+
+  d_os << "style='fill:none;stroke:" << col << ";stroke-width:" << width
+       << "px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       << "'";
+  d_os << " />\n";
+}
+
 // ****************************************************************************
 void MolDraw2DSVG::drawLine(const Point2D &cds1, const Point2D &cds2) {
   Point2D c1 = getDrawCoords(cds1);
@@ -119,7 +157,7 @@ void MolDraw2DSVG::drawPolygon(const std::vector<Point2D> &cds) {
   d_os << " " << c0.x << "," << c0.y;
   d_os << "' style='";
   if (fillPolys())
-    d_os << "fill:" << col << ";fill-rule:evenodd";
+    d_os << "fill:" << col << ";fill-rule:evenodd;";
   else
     d_os << "fill:none;";
 
@@ -150,7 +188,7 @@ void MolDraw2DSVG::drawEllipse(const Point2D &cds1, const Point2D &cds2) {
 
   d_os << " style='";
   if (fillPolys())
-    d_os << "fill:" << col << ";fill-rule:evenodd";
+    d_os << "fill:" << col << ";fill-rule:evenodd;";
   else
     d_os << "fill:none;";
 
@@ -187,6 +225,7 @@ void MolDraw2DSVG::getStringSize(const std::string &label, double &label_width,
   TextDrawType draw_mode = TextDrawNormal;
 
   bool had_a_super = false;
+  bool had_a_sub = false;
 
   for (int i = 0, is = label.length(); i < is; ++i) {
     // setStringDrawMode moves i along to the end of any <sub> or <sup>
@@ -201,9 +240,10 @@ void MolDraw2DSVG::getStringSize(const std::string &label, double &label_width,
         static_cast<double>(MolDraw2D_detail::char_widths[(int)label[i]]) /
         MolDraw2D_detail::char_widths[(int)'M'];
     if (TextDrawSubscript == draw_mode) {
-      char_width *= 0.75;
+      char_width *= 0.5;
+      had_a_sub = true;
     } else if (TextDrawSuperscript == draw_mode) {
-      char_width *= 0.75;
+      char_width *= 0.5;
       had_a_super = true;
     }
     label_width += char_width;
@@ -214,19 +254,36 @@ void MolDraw2DSVG::getStringSize(const std::string &label, double &label_width,
   if (had_a_super) {
     label_height *= 1.1;
   }
+  if (had_a_sub) {
+    label_height *= 1.1;
+  }
 }
 
 // ****************************************************************************
 // draws the string centred on cds
 void MolDraw2DSVG::drawString(const std::string &str, const Point2D &cds) {
   unsigned int fontSz = scale() * fontSize();
-  std::string col = DrawColourToSVG(colour());
 
   double string_width, string_height;
   getStringSize(str, string_width, string_height);
 
   double draw_x = cds.x - string_width / 2.0;
   double draw_y = cds.y - string_height / 2.0;
+
+#if 0
+  // for debugging text output
+  DrawColour tcolour =colour();
+  setColour(DrawColour(.8,.8,.8));
+  std::vector<Point2D> poly;
+  poly.push_back(Point2D(draw_x,draw_y));
+  poly.push_back(Point2D(draw_x+string_width,draw_y));
+  poly.push_back(Point2D(draw_x+string_width,draw_y+string_height));
+  poly.push_back(Point2D(draw_x,draw_y+string_height));
+  drawPolygon(poly);
+  setColour(tcolour);
+#endif
+  std::string col = DrawColourToSVG(colour());
+
   Point2D draw_coords = getDrawCoords(Point2D(draw_x, draw_y));
 
   d_os << "<svg:text";

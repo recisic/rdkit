@@ -30,12 +30,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-#ifdef WIN32
-#include <Windows.h>
-#else
+#ifndef _MSC_VER
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
+#endif
+#ifdef _WIN32
+#include <Windows.h>
+#else
 #include <sys/resource.h>
 #endif
 
@@ -62,7 +64,7 @@ static unsigned n_failed = 0;
 static unsigned long long T0;
 static unsigned long long t0;
 
-#ifdef WIN32
+#ifdef _MSC_VER
 #define DELTA_EPOCH_IN_MICROSECS 11644473600000000ULL
 
 struct timezone {
@@ -271,7 +273,7 @@ void test1() {
   strcpy(fs[8], fs1[8]);
   //-----------------------------------
 
-  for (int i = 0; i < sizeof(smi) / sizeof(smi[0]); i++) {
+  for (unsigned int i = 0; i < sizeof(smi) / sizeof(smi[0]); i++) {
     static const std::string es("NULL");
     std::string id;
     std::string smiles = getSmilesOnly(smi[i], &id);
@@ -376,7 +378,7 @@ void test2() {
       "Cc1c(C(=O)NCCO)[n+](=O)c2ccccc2n1[O-],ZINC21984717,O=C(NC[*:2])[*:1],"
       "Cc1c([*:1])[n+](=O)c2ccccc2n1[O-].OC[*:2]"};
 
-  for (int i = 0; i < sizeof(smi) / sizeof(smi[0]); i++) {
+  for (unsigned int i = 0; i < sizeof(smi) / sizeof(smi[0]); i++) {
     static const std::string es("NULL");
     std::string id;
     std::string smiles = getSmilesOnly(smi[i], &id);
@@ -664,14 +666,14 @@ std::endl;
 //====================================================================================================
 //====================================================================================================
 
-int main(int argc, const char* argv[]) {
+int main() {
   BOOST_LOG(rdInfoLog)
       << "*******************************************************\n";
   BOOST_LOG(rdInfoLog) << "MMPA Unit Test \n";
 
 // use maximum CPU resoures to increase time measuring accuracy and stability in
 // multi process environment
-#ifdef WIN32
+#ifdef _WIN32
   //    SetPriorityClass (GetCurrentProcess(), REALTIME_PRIORITY_CLASS );
   SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 #else

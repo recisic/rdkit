@@ -72,9 +72,8 @@ void embedCisTransSystems(const RDKit::ROMol &mol,
     if (((*cbi)->getBondType() == RDKit::Bond::DOUBLE)  // this is a double bond
         && ((*cbi)->getStereo() >
             RDKit::Bond::STEREOANY)  // and has stereo chemistry specified
-        &&
-        (!(*cbi)->getOwningMol().getRingInfo()->numBondRings(
-            (*cbi)->getIdx()))) {  // not in a ring
+        && (!(*cbi)->getOwningMol().getRingInfo()->numBondRings(
+               (*cbi)->getIdx()))) {  // not in a ring
       if ((*cbi)->getStereoAtoms().size() != 2) {
         BOOST_LOG(rdWarningLog)
             << "WARNING: bond found with stereo spec but no stereo atoms"
@@ -131,8 +130,10 @@ std::list<EmbeddedFrag>::iterator _findLargestFrag(
 
 void _shiftCoords(std::list<EmbeddedFrag> &efrags) {
   // shift the coordinates if there are multiple fragments
-  // so that the fargments do not overlap each other
-
+  // so that the fragments do not overlap each other
+  if (efrags.empty()) {
+    return;
+  }
   for (std::list<EmbeddedFrag>::iterator efi = efrags.begin();
        efi != efrags.end(); efi++) {
     efi->computeBox();
@@ -175,14 +176,18 @@ void computeInitialCoords(RDKit::ROMol &mol,
                           std::list<EmbeddedFrag> &efrags) {
   RDKit::INT_VECT atomRanks;
   atomRanks.resize(mol.getNumAtoms());
-
-  RDKit::MolOps::assignStereochemistry(mol, false);
-
-  efrags.clear();
+  for (unsigned int i = 0; i < mol.getNumAtoms(); ++i) {
+    atomRanks[i] = getAtomDepictRank(mol.getAtomWithIdx(i));
+  }
   RDKit::VECT_INT_VECT arings;
 
   // first find all the rings
   RDKit::MolOps::symmetrizeSSSR(mol, arings);
+
+  // do stereochemistry 
+  RDKit::MolOps::assignStereochemistry(mol, false);
+
+  efrags.clear();
 
   // user specfied coordinates exist
   bool preSpec = false;
@@ -222,7 +227,7 @@ void computeInitialCoords(RDKit::ROMol &mol,
       RDKit::INT_LIST_I nri, mnri;
       for (nri = nratms.begin(); nri != nratms.end(); nri++) {
         rank = atomRanks[*nri];
-        rank *= 1000;
+        rank *= mol.getNumAtoms();
         // use the atom index as well so that we at least
         // get reproduceable depictions in cases where things
         // have identical ranks.

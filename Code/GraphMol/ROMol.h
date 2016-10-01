@@ -29,6 +29,7 @@
 
 // our stuff
 #include <RDGeneral/types.h>
+#include <RDGeneral/RDProps.h>
 #include "Atom.h"
 #include "Bond.h"
 
@@ -42,7 +43,8 @@ typedef boost::shared_ptr<Bond> BOND_SPTR;
 
 //! This is the BGL type used to store the topology:
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS,
-                              ATOM_SPTR, BOND_SPTR> MolGraph;
+                              ATOM_SPTR, BOND_SPTR>
+    MolGraph;
 class MolPickler;
 class RWMol;
 class QueryAtom;
@@ -98,7 +100,7 @@ extern const int ci_ATOM_HOLDER;
 
  */
 
-class ROMol {
+class ROMol : public RDProps {
  public:
   friend class MolPickler;
   friend class RWMol;
@@ -173,7 +175,7 @@ class ROMol {
   //@}
   //! \endcond
 
-  ROMol() { initMol(); }
+  ROMol() : RDProps() { initMol(); }
 
   //! copy constructor with a twist
   /*!
@@ -186,8 +188,7 @@ class ROMol {
     only
          the specified conformer from \c other.
   */
-  ROMol(const ROMol &other, bool quickCopy = false, int confId = -1) {
-    dp_props = 0;
+  ROMol(const ROMol &other, bool quickCopy = false, int confId = -1) : RDProps() {
     dp_ringInfo = 0;
     initFromOther(other, quickCopy, confId);
   };
@@ -208,14 +209,14 @@ class ROMol {
   //! \overload
   const Atom *getAtomWithIdx(unsigned int idx) const;
   //! \overload
-  template<class U>
+  template <class U>
   Atom *getAtomWithIdx(const U idx) {
-      return getAtomWithIdx(rdcast<unsigned int>(idx));
+    return getAtomWithIdx(rdcast<unsigned int>(idx));
   }
   //! \overload
-  template<class U>
+  template <class U>
   const Atom *getAtomWithIdx(const U idx) const {
-      return getAtomWithIdx(rdcast<unsigned int>(idx));
+    return getAtomWithIdx(rdcast<unsigned int>(idx));
   }
   //! returns the degree (number of neighbors) of an Atom in the graph
   unsigned int getAtomDegree(const Atom *at) const;
@@ -235,12 +236,12 @@ class ROMol {
   //! \overload
   template <class U>
   Bond *getBondWithIdx(const U idx) {
-      return getBondWithIdx(rdcast<unsigned int>(idx));
+    return getBondWithIdx(rdcast<unsigned int>(idx));
   }
   //! \overload
   template <class U>
   const Bond *getBondWithIdx(const U idx) const {
-      return getBondWithIdx(rdcast<unsigned int>(idx));
+    return getBondWithIdx(rdcast<unsigned int>(idx));
   }
   //! returns a pointer to the bond between two atoms, Null on failure
   Bond *getBondBetweenAtoms(unsigned int idx1, unsigned int idx2);
@@ -249,14 +250,14 @@ class ROMol {
   //! \overload
   template <class U, class V>
   Bond *getBondBetweenAtoms(const U idx1, const V idx2) {
-      return getBondBetweenAtoms(rdcast<unsigned int>(idx1),
-                                 rdcast<unsigned int>(idx2));
+    return getBondBetweenAtoms(rdcast<unsigned int>(idx1),
+                               rdcast<unsigned int>(idx2));
   }
   //! \overload
   template <class U, class V>
   const Bond *getBondBetweenAtoms(const U idx1, const V idx2) const {
-      return getBondBetweenAtoms(rdcast<unsigned int>(idx1),
-          rdcast<unsigned int>(idx2));
+    return getBondBetweenAtoms(rdcast<unsigned int>(idx1),
+                               rdcast<unsigned int>(idx2));
   }
 
   //@}
@@ -359,7 +360,9 @@ class ROMol {
   */
   unsigned int addConformer(Conformer *conf, bool assignId = false);
 
-  inline unsigned int getNumConformers() const { return rdcast<unsigned int>(d_confs.size()); }
+  inline unsigned int getNumConformers() const {
+    return rdcast<unsigned int>(d_confs.size());
+  }
 
   //@}
 
@@ -550,140 +553,6 @@ class ROMol {
   //! \name Properties
   //@{
 
-  //! returns a list with the names of our \c properties
-  STR_VECT getPropList(bool includePrivate = true,
-                       bool includeComputed = true) const {
-    const STR_VECT &tmp = dp_props->keys();
-    STR_VECT res, computed;
-    if (!includeComputed &&
-        getPropIfPresent(detail::computedPropName, computed)) {
-      computed.push_back(detail::computedPropName);
-    }
-
-    STR_VECT::const_iterator pos = tmp.begin();
-    while (pos != tmp.end()) {
-      if ((includePrivate || (*pos)[0] != '_') &&
-          std::find(computed.begin(), computed.end(), *pos) == computed.end()) {
-        res.push_back(*pos);
-      }
-      pos++;
-    }
-    return res;
-  }
-
-  //! sets a \c property value
-  /*!
-     \param key the name under which the \c property should be stored.
-         If a \c property is already stored under this name, it will be
-         replaced.
-     \param val the value to be stored
-     \param computed (optional) allows the \c property to be flagged
-         \c computed.
-   */
-  template <typename T>
-  void setProp(const char *key, T val, bool computed = false) const {
-    std::string what(key);
-    setProp(what, val, computed);
-  }
-  //! \overload
-  template <typename T>
-  void setProp(const std::string &key, T val, bool computed = false) const {
-    if (computed) {
-      STR_VECT compLst;
-      dp_props->getVal(detail::computedPropName, compLst);
-      if (std::find(compLst.begin(), compLst.end(), key) == compLst.end()) {
-        compLst.push_back(key);
-        dp_props->setVal(detail::computedPropName, compLst);
-      }
-    }
-    dp_props->setVal(key, val);
-  }
-
-  //! allows retrieval of a particular property value
-  /*!
-
-     \param key the name under which the \c property should be stored.
-         If a \c property is already stored under this name, it will be
-         replaced.
-     \param res a reference to the storage location for the value.
-
-     <b>Notes:</b>
-       - if no \c property with name \c key exists, a KeyErrorException will be
-     thrown.
-       - the \c boost::lexical_cast machinery is used to attempt type
-     conversions.
-         If this fails, a \c boost::bad_lexical_cast exception will be thrown.
-
-  */
-  template <typename T>
-  void getProp(const char *key, T &res) const {
-    dp_props->getVal(key, res);
-  }
-  //! \overload
-  template <typename T>
-  void getProp(const std::string &key, T &res) const {
-    dp_props->getVal(key, res);
-  }
-  //! \overload
-  template <typename T>
-  T getProp(const char *key) const {
-    return dp_props->getVal<T>(key);
-  }
-  //! \overload
-  template <typename T>
-  T getProp(const std::string &key) const {
-    return dp_props->getVal<T>(key);
-  }
-
-  //! returns whether or not we have a \c property with name \c key
-  //!  and assigns the value if we do
-  template <typename T>
-  bool getPropIfPresent(const char *key, T &res) const {
-    return dp_props->getValIfPresent(key, res);
-  }
-  //! \overload
-  template <typename T>
-  bool getPropIfPresent(const std::string &key, T &res) const {
-    return dp_props->getValIfPresent(key, res);
-  }
-
-  //! returns whether or not we have a \c property with name \c key
-  bool hasProp(const char *key) const {
-    if (!dp_props) return false;
-    return dp_props->hasVal(key);
-  }
-  //! \overload
-  bool hasProp(const std::string &key) const {
-    if (!dp_props) return false;
-    return dp_props->hasVal(key);
-    // return hasProp(key.c_str());
-  }
-
-  //! clears the value of a \c property
-  /*!
-     <b>Notes:</b>
-       - if no \c property with name \c key exists, a KeyErrorException
-         will be thrown.
-       - if the \c property is marked as \c computed, it will also be removed
-         from our list of \c computedProperties
-  */
-  void clearProp(const char *key) const {
-    std::string what(key);
-    clearProp(what);
-  };
-  //! \overload
-  void clearProp(const std::string &key) const {
-    STR_VECT compLst;
-    getProp(detail::computedPropName, compLst);
-    STR_VECT_I svi = std::find(compLst.begin(), compLst.end(), key);
-    if (svi != compLst.end()) {
-      compLst.erase(svi);
-      dp_props->setVal(detail::computedPropName, compLst);
-    }
-
-    dp_props->clearVal(key);
-  };
-
   //! clears all of our \c computed \c properties
   void clearComputedProps(bool includeRings = true) const;
   //! calculates any of our lazy \c properties
@@ -717,7 +586,6 @@ class ROMol {
   MolGraph d_graph;
   ATOM_BOOKMARK_MAP d_atomBookmarks;
   BOND_BOOKMARK_MAP d_bondBookmarks;
-  Dict *dp_props;
   RingInfo *dp_ringInfo;
   CONF_SPTR_LIST d_confs;
   ROMol &operator=(

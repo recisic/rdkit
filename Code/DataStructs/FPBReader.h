@@ -12,6 +12,9 @@
 /*! \file FPBReader.h
 
   \brief contains a simple class for reading and searching FPB files
+
+  \b Note that this functionality is experimental and the API may change
+     in future releases.
 */
 
 #include <iostream>
@@ -40,6 +43,15 @@ struct FPBReader_impl;
   std::vector<std::pair<double, unsigned int> > nbrs =
       reader.getTanimotoNeighbors(*ebv.get(), 0.70);
   \endcode
+
+  \b Note: this functionality is experimental and the API may change
+     in future releases.
+
+  <b>Note on thread safety</b>
+  Operations that involve reading from the FPB file are not thread safe.
+  This means that the \c init() method is not thread safe and none of the
+  search operations are thread safe when an \c FPBReader is initialized in
+  \c lazyRead mode.
 
 */
 class FPBReader {
@@ -100,6 +112,15 @@ class FPBReader {
   and delete inStream after calling \c init()
   */
   void init();
+  //! cleanup
+  /*!
+  Cleans up whatever memory was allocated during init()
+  */
+  void cleanup() {
+    if (!df_init) return;
+    destroy();
+    df_init = false;
+  };
   //! returns the requested fingerprint as an \c ExplicitBitVect
   boost::shared_ptr<ExplicitBitVect> getFP(unsigned int idx) const;
   //! returns the requested fingerprint as an array of bytes

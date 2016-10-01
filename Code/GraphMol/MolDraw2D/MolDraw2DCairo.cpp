@@ -18,6 +18,7 @@ void MolDraw2DCairo::initDrawing() {
   PRECONDITION(dp_cr, "no draw context");
   cairo_select_font_face(dp_cr, "sans", CAIRO_FONT_SLANT_NORMAL,
                          CAIRO_FONT_WEIGHT_NORMAL);
+  cairo_set_line_cap(dp_cr, CAIRO_LINE_CAP_BUTT);
 }
 
 // ****************************************************************************
@@ -44,8 +45,7 @@ void MolDraw2DCairo::drawLine(const Point2D &cds1, const Point2D &cds2) {
   const DashPattern &dashes = dash();
   if (dashes.size()) {
     double dd[dashes.size()];
-    for (unsigned int di = 0; di < dashes.size(); ++di)
-      dd[di] = dashes[di] * 1.5;
+    std::copy(dashes.begin(), dashes.end(), dd);
     cairo_set_dash(dp_cr, dd, dashes.size(), 0);
   } else {
     cairo_set_dash(dp_cr, 0, 0, 0);
@@ -53,6 +53,41 @@ void MolDraw2DCairo::drawLine(const Point2D &cds1, const Point2D &cds2) {
 
   cairo_move_to(dp_cr, c1.x, c1.y);
   cairo_line_to(dp_cr, c2.x, c2.y);
+  cairo_stroke(dp_cr);
+}
+
+void MolDraw2DCairo::drawWavyLine(const Point2D &cds1, const Point2D &cds2,
+                                  const DrawColour &col1,
+                                  const DrawColour &col2,
+                                  unsigned int nSegments, double vertOffset) {
+  PRECONDITION(dp_cr, "no draw context");
+  PRECONDITION(nSegments > 1, "too few segments");
+
+  if (nSegments % 2)
+    ++nSegments;  // we're going to assume an even number of segments
+
+  Point2D perp = calcPerpendicular(cds1, cds2);
+  Point2D delta = (cds2 - cds1);
+  perp *= vertOffset;
+  delta /= nSegments;
+
+  Point2D c1 = getDrawCoords(cds1);
+
+  unsigned int width = lineWidth();
+  cairo_set_line_width(dp_cr, width);
+  cairo_set_dash(dp_cr, 0, 0, 0);
+  setColour(col1);
+  cairo_move_to(dp_cr, c1.x, c1.y);
+  for (unsigned int i = 0; i < nSegments; ++i) {
+    Point2D startpt = cds1 + delta * i;
+    Point2D segpt = getDrawCoords(startpt + delta);
+    Point2D cpt1 =
+        getDrawCoords(startpt + delta / 3. + perp * (i % 2 ? -1 : 1));
+    Point2D cpt2 =
+        getDrawCoords(startpt + delta * 2. / 3. + perp * (i % 2 ? -1 : 1));
+    // if (i == nSegments / 2 && col2 != col1) setColour(col2);
+    cairo_curve_to(dp_cr, cpt1.x, cpt1.y, cpt2.x, cpt2.y, segpt.x, segpt.y);
+  }
   cairo_stroke(dp_cr);
 }
 
@@ -66,9 +101,6 @@ void MolDraw2DCairo::drawChar(char c, const Point2D &cds) {
 
   cairo_text_extents_t extents;
   cairo_text_extents(dp_cr, txt, &extents);
-  double twidth = extents.width, theight = extents.height;
-
-  unsigned int fontSz = scale() * fontSize();
   Point2D c1 = cds;
   cairo_move_to(dp_cr, c1.x, c1.y);
   cairo_show_text(dp_cr, txt);
@@ -80,6 +112,11 @@ void MolDraw2DCairo::drawPolygon(const std::vector<Point2D> &cds) {
   PRECONDITION(dp_cr, "no draw context");
   PRECONDITION(cds.size() >= 3, "must have at least three points");
 
+  cairo_line_cap_t olinecap = cairo_get_line_cap(dp_cr);
+  cairo_line_join_t olinejoin = cairo_get_line_join(dp_cr);
+
+  cairo_set_line_cap(dp_cr, CAIRO_LINE_CAP_BUTT);
+  cairo_set_line_join(dp_cr, CAIRO_LINE_JOIN_BEVEL);
   cairo_set_line_width(dp_cr, lineWidth());
   cairo_set_dash(dp_cr, 0, 0, 0);
 
@@ -94,6 +131,8 @@ void MolDraw2DCairo::drawPolygon(const std::vector<Point2D> &cds) {
   cairo_close_path(dp_cr);
   if (fillPolys()) cairo_fill_preserve(dp_cr);
   cairo_stroke(dp_cr);
+  cairo_set_line_cap(dp_cr, olinecap);
+  cairo_set_line_join(dp_cr, olinejoin);
 }
 
 // ****************************************************************************
@@ -172,8 +211,7 @@ std::string MolDraw2DCairo::getDrawingText() const {
   PRECONDITION(dp_cr, "no draw context");
   std::string res = "";
   cairo_surface_t *surf = cairo_get_target(dp_cr);
-  cairo_status_t status =
-      cairo_surface_write_to_png_stream(surf, &grab_str, (void *)&res);
+  cairo_surface_write_to_png_stream(surf, &grab_str, (void *)&res);
   return res;
 };
 

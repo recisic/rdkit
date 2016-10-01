@@ -29,31 +29,24 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
+#include <postgres.h>
+#include <fmgr.h>
+
 #include "rdkit.h"
-#include "fmgr.h"
+#include "cache.h"
 
-static int
-bfpcmp(BitmapFingerPrint *a, BitmapFingerPrint *b) {
-  int res;
+extern int ReactionSubstructFP();
 
-  res = memcmp(VARDATA(a), VARDATA(b), Min(VARSIZE(a), VARSIZE(b)) - VARHDRSZ);
-  if ( res )
-    return res;
-
-  if (VARSIZE(a) == VARSIZE(b))
-    return 0;
-  return (VARSIZE(a) > VARSIZE(b)) ? 1 : -1;
-}
 /***************** chem reaction operations ***********************/
 
 
 #define CHEMREACTDESCR( name, func, ret )                               \
+  PGDLLEXPORT Datum           reaction_##name(PG_FUNCTION_ARGS);                         \
   PG_FUNCTION_INFO_V1(reaction_##name);                                      \
-  Datum           reaction_##name(PG_FUNCTION_ARGS);                         \
   Datum                                                                 \
   reaction_##name(PG_FUNCTION_ARGS){                                         \
   CChemicalReaction        rxn;                                         \
-  fcinfo->flinfo->fn_extra = SearchChemReactionCache(                   \
+  fcinfo->flinfo->fn_extra = searchReactionCache(                   \
                                             fcinfo->flinfo->fn_extra,   \
                                             fcinfo->flinfo->fn_mcxt,    \
                                             PG_GETARG_DATUM(0),         \
@@ -66,18 +59,18 @@ CHEMREACTDESCR(numreactants,ChemReactNumReactants,INT32)
 CHEMREACTDESCR(numproducts,ChemReactNumProducts,INT32)
 CHEMREACTDESCR(numagents,ChemReactNumAgents,INT32)
 
+PGDLLEXPORT Datum           reaction_substruct(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(reaction_substruct);
-Datum           reaction_substruct(PG_FUNCTION_ARGS);
 Datum
 reaction_substruct(PG_FUNCTION_ARGS) {
   CChemicalReaction  rxn, rxn2;
 
-  fcinfo->flinfo->fn_extra = SearchChemReactionCache(
+  fcinfo->flinfo->fn_extra = searchReactionCache(
                                             fcinfo->flinfo->fn_extra,
                                             fcinfo->flinfo->fn_mcxt,
                                             PG_GETARG_DATUM(0),
                                             NULL, &rxn, NULL);
-  fcinfo->flinfo->fn_extra = SearchChemReactionCache(
+  fcinfo->flinfo->fn_extra = searchReactionCache(
                                             fcinfo->flinfo->fn_extra,
                                             fcinfo->flinfo->fn_mcxt,
                                             PG_GETARG_DATUM(1),
@@ -86,18 +79,18 @@ reaction_substruct(PG_FUNCTION_ARGS) {
   PG_RETURN_BOOL(ReactionSubstruct(rxn, rxn2));
 }
 
+PGDLLEXPORT Datum           reaction_rsubstruct(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(reaction_rsubstruct);
-Datum           reaction_rsubstruct(PG_FUNCTION_ARGS);
 Datum
 reaction_rsubstruct(PG_FUNCTION_ARGS) {
   CChemicalReaction rxn, rxn2;
 
-  fcinfo->flinfo->fn_extra = SearchChemReactionCache(
+  fcinfo->flinfo->fn_extra = searchReactionCache(
                                             fcinfo->flinfo->fn_extra,
                                             fcinfo->flinfo->fn_mcxt,
                                             PG_GETARG_DATUM(0),
                                             NULL, &rxn, NULL);
-  fcinfo->flinfo->fn_extra = SearchChemReactionCache(
+  fcinfo->flinfo->fn_extra = searchReactionCache(
                                             fcinfo->flinfo->fn_extra,
                                             fcinfo->flinfo->fn_mcxt,
                                             PG_GETARG_DATUM(1),
@@ -106,18 +99,18 @@ reaction_rsubstruct(PG_FUNCTION_ARGS) {
   PG_RETURN_BOOL(ReactionSubstruct(rxn2, rxn));
 }
 
+PGDLLEXPORT Datum           reaction_substructFP(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(reaction_substructFP);
-Datum           reaction_substructFP(PG_FUNCTION_ARGS);
 Datum
 reaction_substructFP(PG_FUNCTION_ARGS) {
   CChemicalReaction rxn, rxn2;
 
-  fcinfo->flinfo->fn_extra = SearchChemReactionCache(
+  fcinfo->flinfo->fn_extra = searchReactionCache(
 	                                            fcinfo->flinfo->fn_extra,
 	                                            fcinfo->flinfo->fn_mcxt,
 	                                            PG_GETARG_DATUM(0),
 	                                            NULL, &rxn, NULL);
-  fcinfo->flinfo->fn_extra = SearchChemReactionCache(
+  fcinfo->flinfo->fn_extra = searchReactionCache(
 	                                            fcinfo->flinfo->fn_extra,
 	                                            fcinfo->flinfo->fn_mcxt,
 	                                            PG_GETARG_DATUM(1),
@@ -126,18 +119,18 @@ reaction_substructFP(PG_FUNCTION_ARGS) {
   PG_RETURN_BOOL(ReactionSubstructFP(rxn, rxn2));
 }
 
+PGDLLEXPORT Datum           reaction_rsubstructFP(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(reaction_rsubstructFP);
-Datum           reaction_rsubstructFP(PG_FUNCTION_ARGS);
 Datum
 reaction_rsubstructFP(PG_FUNCTION_ARGS) {
   CChemicalReaction rxn, rxn2;
 
-  fcinfo->flinfo->fn_extra = SearchChemReactionCache(
+  fcinfo->flinfo->fn_extra = searchReactionCache(
 	                                            fcinfo->flinfo->fn_extra,
 	                                            fcinfo->flinfo->fn_mcxt,
 	                                            PG_GETARG_DATUM(0),
 	                                            NULL, &rxn, NULL);
-  fcinfo->flinfo->fn_extra = SearchChemReactionCache(
+  fcinfo->flinfo->fn_extra = searchReactionCache(
 	                                            fcinfo->flinfo->fn_extra,
 	                                            fcinfo->flinfo->fn_mcxt,
 	                                            PG_GETARG_DATUM(1),
@@ -147,20 +140,20 @@ reaction_rsubstructFP(PG_FUNCTION_ARGS) {
 }
 
 #define REACTIONCMPFUNC( type, action, ret )                            \
+  PGDLLEXPORT Datum           reaction_##type(PG_FUNCTION_ARGS);	\
   PG_FUNCTION_INFO_V1(reaction_##type);                                 \
-  Datum           reaction_##type(PG_FUNCTION_ARGS);                    \
   Datum                                                                 \
   reaction_##type(PG_FUNCTION_ARGS)                                     \
   {                                                                     \
-	CChemicalReaction rxn, rxn2;                                        \
+    CChemicalReaction rxn, rxn2;                                        \
     int res;                                                            \
                                                                         \
-    fcinfo->flinfo->fn_extra = SearchChemReactionCache(                 \
+    fcinfo->flinfo->fn_extra = searchReactionCache(			\
                                               fcinfo->flinfo->fn_extra, \
                                               fcinfo->flinfo->fn_mcxt,  \
                                               PG_GETARG_DATUM(0),       \
                                               NULL, &rxn, NULL);        \
-    fcinfo->flinfo->fn_extra = SearchChemReactionCache(                 \
+    fcinfo->flinfo->fn_extra = searchReactionCache(			\
                                               fcinfo->flinfo->fn_extra, \
                                               fcinfo->flinfo->fn_mcxt,  \
                                               PG_GETARG_DATUM(1),       \
